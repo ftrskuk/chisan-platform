@@ -7,15 +7,20 @@ import { toast } from "sonner";
 import { useItems, useDeleteItem, usePaperTypes } from "@/hooks/api";
 import { DataTable } from "@/components/data-table";
 import { itemColumns } from "@/components/items/item-columns";
+import { paperTypeColumns } from "@/components/items/paper-type-columns";
 import { ItemForm } from "@/components/items/item-form";
+import { PaperTypeForm } from "@/components/items/paper-type-form";
 import { FormSheet } from "@/components/form-sheet";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PageHeader } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import type { ItemWithRelations } from "@repo/shared";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { ItemWithRelations, PaperType } from "@repo/shared";
 
 export default function ItemsPage() {
-  const [formOpen, setFormOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("items");
+
+  const [itemFormOpen, setItemFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ItemWithRelations | null>(
     null,
   );
@@ -23,16 +28,21 @@ export default function ItemsPage() {
     null,
   );
 
-  const { data: items, isLoading } = useItems();
-  const { data: paperTypes } = usePaperTypes();
+  const [paperTypeFormOpen, setPaperTypeFormOpen] = useState(false);
+  const [editingPaperType, setEditingPaperType] = useState<PaperType | null>(
+    null,
+  );
+
+  const { data: items, isLoading: itemsLoading } = useItems();
+  const { data: paperTypes, isLoading: paperTypesLoading } = usePaperTypes();
   const deleteMutation = useDeleteItem();
 
-  const handleEdit = (item: ItemWithRelations) => {
+  const handleEditItem = (item: ItemWithRelations) => {
     setEditingItem(item);
-    setFormOpen(true);
+    setItemFormOpen(true);
   };
 
-  const handleDelete = async () => {
+  const handleDeleteItem = async () => {
     if (!deleteTarget) return;
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
@@ -45,14 +55,28 @@ export default function ItemsPage() {
     }
   };
 
-  const handleFormSuccess = () => {
-    setFormOpen(false);
+  const handleItemFormSuccess = () => {
+    setItemFormOpen(false);
     setEditingItem(null);
   };
 
-  const columns = itemColumns({
-    onEdit: handleEdit,
+  const handleEditPaperType = (paperType: PaperType) => {
+    setEditingPaperType(paperType);
+    setPaperTypeFormOpen(true);
+  };
+
+  const handlePaperTypeFormSuccess = () => {
+    setPaperTypeFormOpen(false);
+    setEditingPaperType(null);
+  };
+
+  const itemColumnsConfig = itemColumns({
+    onEdit: handleEditItem,
     onDelete: setDeleteTarget,
+  });
+
+  const paperTypeColumnsConfig = paperTypeColumns({
+    onEdit: handleEditPaperType,
   });
 
   const paperTypeOptions =
@@ -65,50 +89,86 @@ export default function ItemsPage() {
     <div className="space-y-6">
       <PageHeader
         title="품목 관리"
-        description="품목(아이템)을 관리합니다."
+        description="품목(아이템) 및 지종(Paper Type)을 관리합니다."
         action={
-          <Button onClick={() => setFormOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            품목 추가
-          </Button>
+          activeTab === "items" ? (
+            <Button onClick={() => setItemFormOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              품목 추가
+            </Button>
+          ) : (
+            <Button onClick={() => setPaperTypeFormOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              지종 추가
+            </Button>
+          )
         }
       />
 
-      <DataTable
-        columns={columns}
-        data={items ?? []}
-        isLoading={isLoading}
-        searchKey="displayName"
-        searchPlaceholder="품목명 검색..."
-        filterableColumns={[
-          {
-            id: "paperType",
-            title: "지종",
-            options: paperTypeOptions,
-          },
-          {
-            id: "form",
-            title: "형태",
-            options: [
-              { label: "롤", value: "roll" },
-              { label: "시트", value: "sheet" },
-            ],
-          },
-          {
-            id: "isActive",
-            title: "상태",
-            options: [
-              { label: "활성", value: "true" },
-              { label: "비활성", value: "false" },
-            ],
-          },
-        ]}
-      />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="items">품목</TabsTrigger>
+          <TabsTrigger value="paper-types">지종</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="items" className="mt-4">
+          <DataTable
+            columns={itemColumnsConfig}
+            data={items ?? []}
+            isLoading={itemsLoading}
+            searchKey="displayName"
+            searchPlaceholder="품목명 검색..."
+            filterableColumns={[
+              {
+                id: "paperType",
+                title: "지종",
+                options: paperTypeOptions,
+              },
+              {
+                id: "form",
+                title: "형태",
+                options: [
+                  { label: "롤", value: "roll" },
+                  { label: "시트", value: "sheet" },
+                ],
+              },
+              {
+                id: "isActive",
+                title: "상태",
+                options: [
+                  { label: "활성", value: "true" },
+                  { label: "비활성", value: "false" },
+                ],
+              },
+            ]}
+          />
+        </TabsContent>
+
+        <TabsContent value="paper-types" className="mt-4">
+          <DataTable
+            columns={paperTypeColumnsConfig}
+            data={paperTypes ?? []}
+            isLoading={paperTypesLoading}
+            searchKey="nameEn"
+            searchPlaceholder="지종명 검색..."
+            filterableColumns={[
+              {
+                id: "isActive",
+                title: "상태",
+                options: [
+                  { label: "활성", value: "true" },
+                  { label: "비활성", value: "false" },
+                ],
+              },
+            ]}
+          />
+        </TabsContent>
+      </Tabs>
 
       <FormSheet
-        open={formOpen}
+        open={itemFormOpen}
         onOpenChange={(open) => {
-          setFormOpen(open);
+          setItemFormOpen(open);
           if (!open) setEditingItem(null);
         }}
         title={editingItem ? "품목 수정" : "새 품목 추가"}
@@ -116,7 +176,26 @@ export default function ItemsPage() {
           editingItem ? "품목 정보를 수정합니다." : "새로운 품목을 추가합니다."
         }
       >
-        <ItemForm item={editingItem} onSuccess={handleFormSuccess} />
+        <ItemForm item={editingItem} onSuccess={handleItemFormSuccess} />
+      </FormSheet>
+
+      <FormSheet
+        open={paperTypeFormOpen}
+        onOpenChange={(open) => {
+          setPaperTypeFormOpen(open);
+          if (!open) setEditingPaperType(null);
+        }}
+        title={editingPaperType ? "지종 수정" : "새 지종 추가"}
+        description={
+          editingPaperType
+            ? "지종 정보를 수정합니다."
+            : "새로운 지종을 추가합니다."
+        }
+      >
+        <PaperTypeForm
+          paperType={editingPaperType}
+          onSuccess={handlePaperTypeFormSuccess}
+        />
       </FormSheet>
 
       <ConfirmDialog
@@ -124,7 +203,7 @@ export default function ItemsPage() {
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title="품목 삭제"
         description={`"${deleteTarget?.displayName}" 품목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
-        onConfirm={handleDelete}
+        onConfirm={handleDeleteItem}
         isLoading={deleteMutation.isPending}
         variant="destructive"
         confirmText="삭제"

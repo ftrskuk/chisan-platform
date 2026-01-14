@@ -8,6 +8,7 @@ import { useWarehouses, useDeleteWarehouse } from "@/hooks/api";
 import { DataTable } from "@/components/data-table";
 import { warehouseColumns } from "@/components/warehouses/warehouse-columns";
 import { WarehouseForm } from "@/components/warehouses/warehouse-form";
+import { LocationsDialog } from "@/components/warehouses/locations-dialog";
 import { FormSheet } from "@/components/form-sheet";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PageHeader } from "@/components/layout";
@@ -20,6 +21,8 @@ export default function WarehousesPage() {
     null,
   );
   const [deleteTarget, setDeleteTarget] = useState<Warehouse | null>(null);
+  const [locationsWarehouse, setLocationsWarehouse] =
+    useState<Warehouse | null>(null);
 
   const { data: warehouses, isLoading } = useWarehouses();
   const deleteMutation = useDeleteWarehouse();
@@ -30,7 +33,7 @@ export default function WarehousesPage() {
   };
 
   const handleManageLocations = (warehouse: Warehouse) => {
-    toast.info(`${warehouse.name} 창고의 로케이션 관리 기능은 준비 중입니다.`);
+    setLocationsWarehouse(warehouse);
   };
 
   const handleDelete = async () => {
@@ -106,6 +109,12 @@ export default function WarehousesPage() {
           onSuccess={handleFormSuccess}
         />
       </FormSheet>
+
+      <LocationsDialog
+        warehouse={locationsWarehouse}
+        open={!!locationsWarehouse}
+        onOpenChange={(open) => !open && setLocationsWarehouse(null)}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}
