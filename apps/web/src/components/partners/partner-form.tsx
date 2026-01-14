@@ -52,27 +52,40 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
       ? {
           partnerCode: partner.partnerCode,
           name: partner.name,
-          nameLocal: partner.nameLocal ?? undefined,
+          nameLocal: partner.nameLocal ?? "",
           partnerType: partner.partnerType,
           countryCode: partner.countryCode,
-          address: partner.address ?? undefined,
-          city: partner.city ?? undefined,
-          contactName: partner.contactName ?? undefined,
-          contactEmail: partner.contactEmail ?? undefined,
-          contactPhone: partner.contactPhone ?? undefined,
-          supplierCurrency: partner.supplierCurrency ?? undefined,
-          supplierPaymentTerms: partner.supplierPaymentTerms ?? undefined,
+          address: partner.address ?? "",
+          city: partner.city ?? "",
+          contactName: partner.contactName ?? "",
+          contactEmail: partner.contactEmail ?? "",
+          contactPhone: partner.contactPhone ?? "",
+          supplierCurrency: partner.supplierCurrency ?? "",
+          supplierPaymentTerms: partner.supplierPaymentTerms ?? "",
           leadTimeDays: partner.leadTimeDays ?? undefined,
-          customerCurrency: partner.customerCurrency ?? undefined,
-          customerPaymentTerms: partner.customerPaymentTerms ?? undefined,
+          customerCurrency: partner.customerCurrency ?? "",
+          customerPaymentTerms: partner.customerPaymentTerms ?? "",
           creditLimit: partner.creditLimit ?? undefined,
-          notes: partner.notes ?? undefined,
+          notes: partner.notes ?? "",
         }
       : {
           partnerCode: "",
           name: "",
+          nameLocal: "",
           partnerType: "supplier",
           countryCode: "",
+          address: "",
+          city: "",
+          contactName: "",
+          contactEmail: "",
+          contactPhone: "",
+          supplierCurrency: "",
+          supplierPaymentTerms: "",
+          leadTimeDays: undefined,
+          customerCurrency: "",
+          customerPaymentTerms: "",
+          creditLimit: undefined,
+          notes: "",
         },
   });
 
@@ -185,7 +198,11 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                 <FormItem>
                   <FormLabel>현지 명칭</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="ABC 트레이딩" />
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      placeholder="ABC 트레이딩"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -219,7 +236,11 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                   <FormItem>
                     <FormLabel>도시</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="서울" />
+                      <Input
+                        {...field}
+                        value={field.value ?? ""}
+                        placeholder="서울"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -236,6 +257,7 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                   <FormControl>
                     <Textarea
                       {...field}
+                      value={field.value ?? ""}
                       placeholder="주소를 입력하세요"
                       rows={2}
                     />
@@ -254,7 +276,11 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                 <FormItem>
                   <FormLabel>담당자</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="홍길동" />
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      placeholder="홍길동"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -270,6 +296,7 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                   <FormControl>
                     <Input
                       {...field}
+                      value={field.value ?? ""}
                       type="email"
                       placeholder="contact@example.com"
                     />
@@ -286,7 +313,11 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                 <FormItem>
                   <FormLabel>연락처</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="010-1234-5678" />
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      placeholder="010-1234-5678"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -307,6 +338,7 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                         <FormControl>
                           <Input
                             {...field}
+                            value={field.value ?? ""}
                             placeholder="USD"
                             maxLength={3}
                             className="uppercase"
@@ -324,7 +356,11 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                       <FormItem>
                         <FormLabel>결제 조건</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Net 30" />
+                          <Input
+                            {...field}
+                            value={field.value ?? ""}
+                            placeholder="Net 30"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -339,9 +375,9 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                         <FormLabel>리드타임 (일)</FormLabel>
                         <FormControl>
                           <Input
-                            {...field}
                             type="number"
                             placeholder="30"
+                            value={field.value ?? ""}
                             onChange={(e) =>
                               field.onChange(
                                 e.target.value
@@ -349,6 +385,9 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                                   : undefined,
                               )
                             }
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            ref={field.ref}
                           />
                         </FormControl>
                         <FormMessage />
@@ -371,6 +410,7 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                         <FormControl>
                           <Input
                             {...field}
+                            value={field.value ?? ""}
                             placeholder="KRW"
                             maxLength={3}
                             className="uppercase"
@@ -388,7 +428,11 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                       <FormItem>
                         <FormLabel>결제 조건</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="익월말" />
+                          <Input
+                            {...field}
+                            value={field.value ?? ""}
+                            placeholder="익월말"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -403,9 +447,9 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                         <FormLabel>여신한도</FormLabel>
                         <FormControl>
                           <Input
-                            {...field}
                             type="number"
                             placeholder="10000000"
+                            value={field.value ?? ""}
                             onChange={(e) =>
                               field.onChange(
                                 e.target.value
@@ -413,6 +457,9 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                                   : undefined,
                               )
                             }
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            ref={field.ref}
                           />
                         </FormControl>
                         <FormMessage />
@@ -432,6 +479,7 @@ export function PartnerForm({ partner, onSuccess }: PartnerFormProps) {
                   <FormControl>
                     <Textarea
                       {...field}
+                      value={field.value ?? ""}
                       placeholder="메모를 입력하세요"
                       rows={3}
                     />

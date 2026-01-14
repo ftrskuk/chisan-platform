@@ -28,7 +28,7 @@ import { RolesGuard } from "../../core/auth/guards/roles.guard";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { WarehousesService } from "./warehouses.service";
 
-@Controller("api/v1/warehouses")
+@Controller("warehouses")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class WarehousesController {
   constructor(private readonly warehousesService: WarehousesService) {}
@@ -52,10 +52,10 @@ export class WarehousesController {
 
   @Patch(":id")
   @Roles("admin", "manager")
-  @UsePipes(new ZodValidationPipe(updateWarehouseSchema))
   update(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() input: UpdateWarehouseInput,
+    @Body(new ZodValidationPipe(updateWarehouseSchema))
+    input: UpdateWarehouseInput,
   ) {
     return this.warehousesService.update(id, input);
   }
@@ -73,20 +73,20 @@ export class WarehousesController {
 
   @Post(":id/locations")
   @Roles("admin", "manager")
-  @UsePipes(new ZodValidationPipe(createLocationSchema))
   createLocation(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() input: CreateLocationInput,
+    @Body(new ZodValidationPipe(createLocationSchema))
+    input: CreateLocationInput,
   ) {
     return this.warehousesService.createLocation(id, input);
   }
 
   @Patch("locations/:locationId")
   @Roles("admin", "manager")
-  @UsePipes(new ZodValidationPipe(updateLocationSchema))
   updateLocation(
     @Param("locationId", ParseUUIDPipe) locationId: string,
-    @Body() input: UpdateLocationInput,
+    @Body(new ZodValidationPipe(updateLocationSchema))
+    input: UpdateLocationInput,
   ) {
     return this.warehousesService.updateLocation(locationId, input);
   }

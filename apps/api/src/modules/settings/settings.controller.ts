@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -17,7 +18,7 @@ import type { RequestUser } from "../../core/auth/types/auth.types";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { SettingsService } from "./settings.service";
 
-@Controller("api/v1/settings")
+@Controller("settings")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
@@ -33,23 +34,23 @@ export class SettingsController {
   findByCategory(@Param("category") category: SettingCategory) {
     const result = settingCategorySchema.safeParse(category);
     if (!result.success) {
-      return { error: "Invalid category" };
+      throw new BadRequestException("Invalid category");
     }
     return this.settingsService.findByCategory(result.data);
   }
 
   @Patch(":category/:key")
   @Roles("admin")
-  @UsePipes(new ZodValidationPipe(updateSettingSchema))
   update(
     @Param("category") category: SettingCategory,
     @Param("key") key: string,
-    @Body() updateDto: UpdateSettingInput,
+    @Body(new ZodValidationPipe(updateSettingSchema))
+    updateDto: UpdateSettingInput,
     @CurrentUser() currentUser: RequestUser,
   ) {
     const categoryResult = settingCategorySchema.safeParse(category);
     if (!categoryResult.success) {
-      return { error: "Invalid category" };
+      throw new BadRequestException("Invalid category");
     }
     return this.settingsService.update(
       categoryResult.data,

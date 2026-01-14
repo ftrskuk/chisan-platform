@@ -130,7 +130,7 @@ export function Sidebar({ userRoles }: SidebarProps) {
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <div className="space-y-6">
-          {navigation.map((entry, index) => {
+          {navigation.map((entry) => {
             if (isSection(entry)) {
               const filteredItems = filterItems(entry.items);
               if (filteredItems.length === 0) return null;

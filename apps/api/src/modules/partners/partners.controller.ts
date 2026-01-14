@@ -28,7 +28,7 @@ import { RolesGuard } from "../../core/auth/guards/roles.guard";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { PartnersService } from "./partners.service";
 
-@Controller("api/v1/partners")
+@Controller("partners")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PartnersController {
   constructor(private readonly partnersService: PartnersService) {}
@@ -62,10 +62,9 @@ export class PartnersController {
 
   @Patch(":id")
   @Roles("admin", "manager")
-  @UsePipes(new ZodValidationPipe(updatePartnerSchema))
   update(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() input: UpdatePartnerInput,
+    @Body(new ZodValidationPipe(updatePartnerSchema)) input: UpdatePartnerInput,
   ) {
     return this.partnersService.update(id, input);
   }
@@ -83,16 +82,15 @@ export class PartnersController {
 
   @Post(":id/brands")
   @Roles("admin", "manager")
-  @UsePipes(new ZodValidationPipe(createBrandSchema))
   createBrand(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() input: CreateBrandInput,
+    @Body(new ZodValidationPipe(createBrandSchema)) input: CreateBrandInput,
   ) {
     return this.partnersService.createBrand(id, input);
   }
 }
 
-@Controller("api/v1/brands")
+@Controller("brands")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class BrandsController {
   constructor(private readonly partnersService: PartnersService) {}
@@ -104,10 +102,9 @@ export class BrandsController {
 
   @Patch(":id")
   @Roles("admin", "manager")
-  @UsePipes(new ZodValidationPipe(updateBrandSchema))
   update(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() input: UpdateBrandInput,
+    @Body(new ZodValidationPipe(updateBrandSchema)) input: UpdateBrandInput,
   ) {
     return this.partnersService.updateBrand(id, input);
   }

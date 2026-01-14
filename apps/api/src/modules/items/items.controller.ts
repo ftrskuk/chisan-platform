@@ -31,7 +31,7 @@ import { RolesGuard } from "../../core/auth/guards/roles.guard";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { ItemsService } from "./items.service";
 
-@Controller("api/v1/paper-types")
+@Controller("paper-types")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PaperTypesController {
   constructor(private readonly itemsService: ItemsService) {}
@@ -50,16 +50,16 @@ export class PaperTypesController {
 
   @Patch(":id")
   @Roles("admin")
-  @UsePipes(new ZodValidationPipe(updatePaperTypeSchema))
   update(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() input: UpdatePaperTypeInput,
+    @Body(new ZodValidationPipe(updatePaperTypeSchema))
+    input: UpdatePaperTypeInput,
   ) {
     return this.itemsService.updatePaperType(id, input);
   }
 }
 
-@Controller("api/v1/items")
+@Controller("items")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ItemsController {
   constructor(private readonly itemsService: ItemsService) {}
@@ -85,10 +85,9 @@ export class ItemsController {
 
   @Patch(":id")
   @Roles("admin", "manager")
-  @UsePipes(new ZodValidationPipe(updateItemSchema))
   update(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() input: UpdateItemInput,
+    @Body(new ZodValidationPipe(updateItemSchema)) input: UpdateItemInput,
   ) {
     return this.itemsService.update(id, input);
   }

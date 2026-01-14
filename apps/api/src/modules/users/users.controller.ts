@@ -20,7 +20,7 @@ import type { RequestUser } from "../../core/auth/types/auth.types";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { UsersService } from "./users.service";
 
-@Controller("api/v1/users")
+@Controller("users")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -39,20 +39,20 @@ export class UsersController {
 
   @Patch(":id")
   @Roles("admin")
-  @UsePipes(new ZodValidationPipe(updateUserSchema))
   update(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() updateUserDto: UpdateUserInput,
+    @Body(new ZodValidationPipe(updateUserSchema))
+    updateUserDto: UpdateUserInput,
   ) {
     return this.usersService.update(id, updateUserDto);
   }
 
   @Post(":id/roles")
   @Roles("admin")
-  @UsePipes(new ZodValidationPipe(assignRoleSchema))
   assignRole(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() assignRoleDto: AssignRoleInput,
+    @Body(new ZodValidationPipe(assignRoleSchema))
+    assignRoleDto: AssignRoleInput,
     @CurrentUser() currentUser: RequestUser,
   ) {
     return this.usersService.assignRole(id, assignRoleDto.role, currentUser.id);

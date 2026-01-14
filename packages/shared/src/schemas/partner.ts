@@ -3,24 +3,52 @@ import { PARTNER_TYPES } from "../types/partner";
 
 export const partnerTypeSchema = z.enum(PARTNER_TYPES);
 
+const optionalString = (maxLength: number) =>
+  z
+    .string()
+    .max(maxLength)
+    .transform((val) => (val === "" ? null : val))
+    .nullable()
+    .optional();
+
+const optionalStringLength = (length: number) =>
+  z
+    .string()
+    .transform((val) => (val === "" ? null : val?.toUpperCase()))
+    .refine(
+      (val) => val === null || val === undefined || val.length === length,
+      {
+        message: `Must be exactly ${length} characters`,
+      },
+    )
+    .nullable()
+    .optional();
+
 export const createPartnerSchema = z.object({
   partnerCode: z.string().min(1).max(20).toUpperCase(),
   name: z.string().min(1).max(100),
-  nameLocal: z.string().max(100).optional(),
+  nameLocal: optionalString(100),
   partnerType: partnerTypeSchema,
   countryCode: z.string().length(2).toUpperCase(),
-  address: z.string().max(200).optional(),
-  city: z.string().max(50).optional(),
-  contactName: z.string().max(50).optional(),
-  contactEmail: z.string().email().optional(),
-  contactPhone: z.string().max(30).optional(),
-  supplierCurrency: z.string().length(3).toUpperCase().optional(),
-  supplierPaymentTerms: z.string().max(50).optional(),
+  address: optionalString(200),
+  city: optionalString(50),
+  contactName: optionalString(50),
+  contactEmail: z
+    .string()
+    .transform((val) => (val === "" ? null : val))
+    .nullable()
+    .optional()
+    .refine((val) => !val || z.string().email().safeParse(val).success, {
+      message: "Invalid email",
+    }),
+  contactPhone: optionalString(30),
+  supplierCurrency: optionalStringLength(3),
+  supplierPaymentTerms: optionalString(50),
   leadTimeDays: z.number().int().min(0).max(365).optional(),
-  customerCurrency: z.string().length(3).toUpperCase().optional(),
-  customerPaymentTerms: z.string().max(50).optional(),
+  customerCurrency: optionalStringLength(3),
+  customerPaymentTerms: optionalString(50),
   creditLimit: z.number().min(0).optional(),
-  notes: z.string().max(500).optional(),
+  notes: optionalString(500),
 });
 
 export const updatePartnerSchema = createPartnerSchema.partial();
