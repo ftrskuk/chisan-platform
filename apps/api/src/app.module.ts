@@ -6,6 +6,9 @@ import { AuthModule } from "./core/auth/auth.module";
 import { AuditModule } from "./core/audit/audit.module";
 import { UsersModule } from "./modules/users/users.module";
 import { SettingsModule } from "./modules/settings/settings.module";
+import { WarehousesModule } from "./modules/warehouses/warehouses.module";
+import { PartnersModule } from "./modules/partners/partners.module";
+import { ItemsModule } from "./modules/items/items.module";
 
 @Module({
   imports: [
@@ -18,6 +21,9 @@ import { SettingsModule } from "./modules/settings/settings.module";
     AuditModule,
     UsersModule,
     SettingsModule,
+    WarehousesModule,
+    PartnersModule,
+    ItemsModule,
   ],
   controllers: [AppController],
 })
