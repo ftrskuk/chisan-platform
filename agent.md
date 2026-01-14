@@ -2,6 +2,14 @@
 
 > AI 에이전트가 이 프로젝트에서 작업할 때 참고해야 할 컨텍스트 문서
 
+## Agent Behavior Rules
+
+| Rule | Description |
+|------|-------------|
+| **Language** | All responses MUST be in English |
+| **Code Comments** | Business logic comments may be in Korean |
+| **Documentation** | Follow existing document language (Korean or English) |
+
 ## Project Overview
 
 **CHISAN Platform**은 지산페이퍼의 통합 비즈니스 플랫폼입니다.
@@ -152,8 +160,11 @@ chisan-platform/
 | Priority | Document | Path |
 |----------|----------|------|
 | HIGH | Architecture Overview | `docs/02-architecture/overview.md` |
+| HIGH | Data Access Boundaries | `docs/02-architecture/data-access-boundaries.md` |
+| HIGH | State Transitions | `docs/02-architecture/state-transitions.md` |
 | HIGH | Feature Map Overview | `docs/04-feature-map/overview.md` |
 | HIGH | Domain Glossary | `docs/references/domain-glossary.md` |
+| MEDIUM | Operations | `docs/02-architecture/operations.md` |
 | MEDIUM | Coding Standards | `docs/05-development/coding-standards.md` |
 | MEDIUM | Module Docs | `docs/03-modules/{module}.md` |
 

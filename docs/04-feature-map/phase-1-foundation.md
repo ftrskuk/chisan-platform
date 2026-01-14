@@ -14,20 +14,31 @@ Phase 1은 지산페이퍼 플랫폼의 안정적인 운영을 위한 핵심 인
 
 이 Feature Set은 시스템의 모든 기능이 동작하기 위한 루트(Root) 의존성을 제공합니다.
 
+> **상세 명세**: [Foundation Specification](./foundation-spec.md) 문서에서 역할 정의, 권한 매트릭스, 감사 로그 정책 등 상세 내용을 확인하세요.
+
 ### FOUND-F001: Authentication (Google OAuth)
 - **Business Workflow**: 사내 직원들이 기존 Google 워크스페이스 계정으로 시스템에 안전하게 접속합니다.
 - **UI Flow**: 로그인 페이지 -> Google 계정 선택 -> 세션 생성 -> 메인 대시보드.
 - **Data Flow**: OAuth Provider 응답 수신 -> 사용자 테이블 확인/생성 -> JWT 세션 발행.
+- **Constraints**: `@chisanpaper.com` 도메인 이메일만 허용.
 
 ### FOUND-F002: User Management
 - **Business Workflow**: 시스템 관리자가 사용자별 역할을 부여하고 접속 권한을 제어합니다.
 - **UI Flow**: 관리자 설정 -> 사용자 목록 -> 역할(Admin, Worker, Manager) 할당.
 - **Data Flow**: `users` 및 `user_roles` 테이블 CRUD.
+- **Roles**: `admin` (전체 권한), `manager` (운영 권한), `worker` (실무 권한).
 
 ### FOUND-F003: Tenant Configuration
 - **Business Workflow**: 회사 기본 정보, 통화 단위, 시스템 환경 설정을 관리합니다.
 - **UI Flow**: 시스템 설정 -> 회사 정보 입력 -> 환경 변수 설정.
 - **Data Flow**: `settings` 테이블 싱글톤 관리.
+- **Categories**: Company Info, Regional, Inventory, Notifications.
+
+### FOUND-F004: Audit Logging
+- **Business Workflow**: 시스템의 중요 변경사항을 자동으로 기록하여 추적성과 규정 준수를 보장합니다.
+- **UI Flow**: 관리자 설정 -> 감사 로그 -> 검색/필터링 -> 상세 보기/내보내기.
+- **Data Flow**: 모든 쓰기 API에서 `audit_logs` 테이블에 자동 기록.
+- **Scope**: 인증 이벤트, 역할 변경, 재고 변동, 상태 전이, 재무 데이터 변경.
 
 ---
 
@@ -116,11 +127,14 @@ Phase 1은 지산페이퍼 플랫폼의 안정적인 운영을 위한 핵심 인
 graph TD
     %% Foundation Layer
     F1[FOUND-F001: Auth] --> F2[FOUND-F002: Users]
+    F1 --> F4[FOUND-F004: Audit]
     F2 --> F3[FOUND-F003: Tenant]
 
     %% Inventory Layer
     F3 --> INV1[INV-F001: Warehouse]
     F3 --> INV2[INV-F002: Items]
+    F4 --> INV1
+    F4 --> INV2
     INV1 --> INV3[INV-F003: Stock-In]
     INV2 --> INV3
     INV3 --> INV5[INV-F005: Inquiry]
@@ -144,13 +158,14 @@ graph TD
 
     %% Styling
     style F1 fill:#f96,stroke:#333
+    style F4 fill:#f96,stroke:#333
     style INV3 fill:#6cf,stroke:#333
     style IMP2 fill:#cf6,stroke:#333
     style PRD3 fill:#f6c,stroke:#333
 ```
 
 ### 개발 순서 (Topology Order)
-1. **Foundation**: FOUND-F001, F002, F003
+1. **Foundation**: FOUND-F001, F002, F003, F004
 2. **Master Data**: INV-F001, INV-F002, IMP-F001
 3. **Core Inventory**: INV-F003, INV-F004, INV-F005
 4. **Import Flow**: IMP-F002, IMP-F003, IMP-F004
@@ -161,7 +176,10 @@ graph TD
 ## 7. 마일스톤 및 체크포인트
 
 ### Week 1-2: Infra & Master Data
-- [ ] Google OAuth 로그인 연동 완료
+- [ ] Google OAuth 로그인 연동 완료 (FOUND-F001)
+- [ ] 사용자 역할 관리 구현 (FOUND-F002)
+- [ ] 감사 로그 인프라 구축 (FOUND-F004)
+- [ ] 시스템 설정 구현 (FOUND-F003)
 - [ ] 창고 및 품목 마스터 CRUD 구현
 - [ ] 데이터베이스 기본 스키마 적용
 
@@ -179,3 +197,4 @@ graph TD
 - 모든 롤(Roll) 단위 제품에 바코드가 부착되고 시스템에서 위치가 추적되는가?
 - 수입된 원지가 생산 공정을 거쳐 슬리팅 롤로 변환되는 과정이 데이터로 끊김 없이 이어지는가?
 - 사용자의 역할에 따라 접근 권한이 적절히 통제되는가?
+- 모든 중요 변경사항(재고, 상태 전이)이 감사 로그에 기록되는가?

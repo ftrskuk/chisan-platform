@@ -20,6 +20,9 @@
 | [Backend (NestJS)](./02-architecture/backend.md) | NestJS 백엔드 설계 |
 | [Frontend (Next.js)](./02-architecture/frontend.md) | Next.js 프론트엔드 설계 |
 | [Database](./02-architecture/database.md) | Supabase PostgreSQL 스키마 원칙 |
+| [Data Access Boundaries](./02-architecture/data-access-boundaries.md) | 데이터 접근 경계, RLS 정책, API vs Direct 규칙 |
+| [State Transitions](./02-architecture/state-transitions.md) | 핵심 엔티티 상태 머신 정의 |
+| [Operations](./02-architecture/operations.md) | 환경 관리, 백업/복구, DR, 모니터링 |
 
 ### 3. Modules (모듈)
 
@@ -36,6 +39,7 @@
 |----------|-------------|
 | [Feature Map Overview](./04-feature-map/overview.md) | EvoDev 방법론, Feature Map 개요 |
 | [Phase 1: Foundation](./04-feature-map/phase-1-foundation.md) | Phase 1 상세 Feature 명세 |
+| [Foundation Specification](./04-feature-map/foundation-spec.md) | Foundation 상세 (역할, 권한, 감사 로그) |
 
 ### 5. Development (개발 가이드)
 
