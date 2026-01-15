@@ -27,12 +27,15 @@ export function FormSheet({
 }: FormSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side={side} className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
+      <SheetContent
+        side={side}
+        className="w-full sm:max-w-lg p-0 flex flex-col gap-0"
+      >
+        <SheetHeader className="border-b px-8 py-6">
           <SheetTitle>{title}</SheetTitle>
           {description && <SheetDescription>{description}</SheetDescription>}
         </SheetHeader>
-        <div className="mt-6">{children}</div>
+        <div className="flex-1 overflow-y-auto px-8 py-8">{children}</div>
       </SheetContent>
     </Sheet>
   );

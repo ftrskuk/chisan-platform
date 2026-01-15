@@ -27,6 +27,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataTablePagination } from "./data-table-pagination";
 import { DataTableToolbar, FilterableColumn } from "./data-table-toolbar";
+import { cn } from "@/lib/utils";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -90,7 +91,7 @@ export function DataTable<TData, TValue>({
         <div className="flex items-center justify-between">
           <Skeleton className="h-8 w-[250px]" />
         </div>
-        <div className="rounded-md border">
+        <div className="rounded-md border border-gray-100">
           <Table>
             <TableHeader>
               <TableRow>
@@ -126,14 +127,21 @@ export function DataTable<TData, TValue>({
         searchPlaceholder={searchPlaceholder}
         filterableColumns={filterableColumns}
       />
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
+      <div className="rounded-md border border-gray-100 bg-white">
+        <Table className="border-separate border-spacing-0">
+          <TableHeader className="sticky top-0 z-10 bg-white shadow-sm">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow
+                key={headerGroup.id}
+                className="hover:bg-transparent border-b border-gray-100"
+              >
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} colSpan={header.colSpan}>
+                    <TableHead
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      className="h-10 border-b border-gray-100 py-2 text-[11px] uppercase tracking-wider font-semibold text-muted-foreground"
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -152,11 +160,19 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className={onRowClick ? "cursor-pointer" : undefined}
+                  className={cn(
+                    "group transition-colors hover:bg-gray-50 border-b border-gray-100 last:border-0",
+                    // Hide checkbox by default, show on hover or selected
+                    "[&_[role=checkbox]]:opacity-0 [&_[role=checkbox]]:transition-opacity hover:[&_[role=checkbox]]:opacity-100 [&_[role=checkbox][aria-checked=true]]:opacity-100",
+                    onRowClick ? "cursor-pointer" : undefined,
+                  )}
                   onClick={() => onRowClick?.(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className="py-2 text-sm border-b border-gray-100 group-last:border-0"
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -169,7 +185,7 @@ export function DataTable<TData, TValue>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="h-24 text-center text-sm text-muted-foreground"
                 >
                   데이터가 없습니다.
                 </TableCell>

@@ -36,7 +36,7 @@ const navigation: NavEntry[] = [
   {
     href: "/dashboard",
     label: "대시보드",
-    icon: <Home className="h-5 w-5" />,
+    icon: <Home className="h-[18px] w-[18px]" />,
   },
   {
     title: "기준정보",
@@ -44,17 +44,17 @@ const navigation: NavEntry[] = [
       {
         href: "/master/warehouses",
         label: "창고 관리",
-        icon: <Warehouse className="h-5 w-5" />,
+        icon: <Warehouse className="h-[18px] w-[18px]" />,
       },
       {
         href: "/master/partners",
         label: "거래처 관리",
-        icon: <Users className="h-5 w-5" />,
+        icon: <Users className="h-[18px] w-[18px]" />,
       },
       {
         href: "/master/items",
         label: "품목 관리",
-        icon: <Package className="h-5 w-5" />,
+        icon: <Package className="h-[18px] w-[18px]" />,
       },
     ],
   },
@@ -64,19 +64,19 @@ const navigation: NavEntry[] = [
       {
         href: "/settings/users",
         label: "사용자 관리",
-        icon: <UserCog className="h-5 w-5" />,
+        icon: <UserCog className="h-[18px] w-[18px]" />,
         roles: ["admin"],
       },
       {
         href: "/settings/audit-logs",
         label: "감사 로그",
-        icon: <FileText className="h-5 w-5" />,
+        icon: <FileText className="h-[18px] w-[18px]" />,
         roles: ["admin"],
       },
       {
         href: "/settings/system",
         label: "시스템 설정",
-        icon: <Settings className="h-5 w-5" />,
+        icon: <Settings className="h-[18px] w-[18px]" />,
         roles: ["admin"],
       },
     ],
@@ -88,6 +88,19 @@ interface SidebarProps {
 }
 
 export function Sidebar({ userRoles }: SidebarProps) {
+  return (
+    <aside className="hidden h-full w-[240px] flex-shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+      <SidebarContent userRoles={userRoles} />
+    </aside>
+  );
+}
+
+interface SidebarContentProps {
+  userRoles: UserRole[];
+  onNavigate?: () => void;
+}
+
+export function SidebarContent({ userRoles, onNavigate }: SidebarContentProps) {
   const pathname = usePathname();
 
   const filterItems = (items: NavItem[]) =>
@@ -104,64 +117,87 @@ export function Sidebar({ userRoles }: SidebarProps) {
       <Link
         key={item.href}
         href={item.href}
+        onClick={onNavigate}
         className={cn(
-          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+          "group relative flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all",
           isActive
-            ? "bg-sidebar-accent text-sidebar-primary"
-            : "text-sidebar-foreground hover:bg-sidebar-accent",
+            ? "bg-white text-primary shadow-sm ring-1 ring-gray-200"
+            : "text-muted-foreground hover:bg-gray-100 hover:text-foreground",
         )}
       >
-        {item.icon}
+        {isActive && (
+          <div className="absolute left-0 ml-1 h-4 w-0.5 rounded-full bg-primary" />
+        )}
+        <span
+          className={cn(
+            "flex items-center justify-center transition-colors",
+            isActive
+              ? "text-primary"
+              : "text-gray-400 group-hover:text-foreground",
+          )}
+        >
+          {item.icon}
+        </span>
         {item.label}
       </Link>
     );
   };
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar">
-      <div className="flex h-16 items-center border-b border-sidebar-border px-6">
+    <div className="flex h-full flex-col bg-sidebar">
+      {/* Logo Area */}
+      <div className="flex h-12 items-center border-b border-sidebar-border px-4">
         <Link
           href="/dashboard"
-          className="text-xl font-bold text-sidebar-foreground"
+          className="flex items-center gap-2.5"
+          onClick={onNavigate}
         >
-          CHISAN
+          <div className="flex h-6 w-6 items-center justify-center rounded bg-gradient-to-br from-gray-800 to-black text-white shadow-sm">
+            <span className="text-xs font-bold">C</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold leading-none text-foreground">
+              CHISAN
+            </span>
+            <span className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+              Enterprise Plan
+            </span>
+          </div>
         </Link>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <div className="space-y-6">
-          {navigation.map((entry) => {
-            if (isSection(entry)) {
-              const filteredItems = filterItems(entry.items);
-              if (filteredItems.length === 0) return null;
-
-              return (
-                <div key={entry.title}>
-                  <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {entry.title}
-                  </h3>
-                  <div className="space-y-1">
-                    {filteredItems.map(renderNavItem)}
-                  </div>
-                </div>
-              );
-            }
-
-            if (
-              entry.roles &&
-              !entry.roles.some((r) => userRoles.includes(r))
-            ) {
-              return null;
-            }
+      {/* Navigation Links */}
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-4">
+        {navigation.map((entry) => {
+          if (isSection(entry)) {
+            const filteredItems = filterItems(entry.items);
+            if (filteredItems.length === 0) return null;
 
             return (
-              <div key={entry.href} className="space-y-1">
-                {renderNavItem(entry)}
+              <div key={entry.title} className="mb-2">
+                <div className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                  {entry.title}
+                </div>
+                <div className="space-y-0.5">
+                  {filteredItems.map(renderNavItem)}
+                </div>
               </div>
             );
-          })}
-        </div>
+          }
+
+          if (entry.roles && !entry.roles.some((r) => userRoles.includes(r))) {
+            return null;
+          }
+
+          return (
+            <div key={entry.href} className="mb-2 space-y-0.5">
+              {renderNavItem(entry)}
+            </div>
+          );
+        })}
       </nav>
-    </aside>
+
+      {/* User Profile / Bottom Actions could go here */}
+    </div>
   );
 }
