@@ -14,7 +14,7 @@ import { ItemsModule } from "./modules/items/items.module";
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [".env.local", ".env"],
+      envFilePath: ["../../.env.local", "../../.env", ".env.local", ".env"],
     }),
     SupabaseModule,
     AuthModule,

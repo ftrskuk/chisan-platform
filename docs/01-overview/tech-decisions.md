@@ -1,120 +1,148 @@
-# 아키텍처 결정 기록 (Architecture Decision Records, ADR)
+# Architecture Decision Records (ADR)
 
-지산페이퍼(CHISAN Paper) 플랫폼 개발 과정에서 내려진 주요 기술적 결정들을 기록한 문서입니다. 모든 결정은 비즈니스 가치 전달 속도, 확장성, 그리고 유지보수 비용을 최우선으로 고려하였습니다.
+This document records key technical decisions made during the development of the CHISAN Paper platform. All decisions prioritized the speed of delivering business value, scalability, and maintenance costs.
 
-## ADR-001: 하이브리드 아키텍처 채택 (NestJS + Next.js)
+## ADR-001: Adopting Hybrid Architecture (NestJS + Next.js)
 
-### 컨텍스트 (Context)
-풀스택 프레임워크인 Next.js만으로도 전체 시스템 구축이 가능하지만, 본 플랫폼은 단순한 CRUD를 넘어 복잡한 비즈니스 로직(슬리팅 가공 수율 계산, 다중 창고 간의 트랜잭션 처리, 복잡한 수입 원가 안분 등)을 포함하고 있습니다. 향후 모바일 앱 전용 API 제공이나 외부 물류 파트너와의 시스템 연동(API) 가능성을 고려할 때, 비즈니스 로직을 온전히 보호하고 재사용할 수 있는 전용 백엔드 서버가 필요합니다.
+### Context
 
-### 결정 (Decision)
-비즈니스 로직의 중심이자 API 서버 역할을 수행하는 **NestJS(Backend)**와 사용자 인터페이스 및 대시보드 기능을 담당하는 **Next.js(Frontend)**를 분리하는 하이브리드 아키텍처를 채택합니다.
+While it is possible to build the entire system using only the full-stack framework Next.js, this platform involves complex business logic (slitting processing yield calculation, transaction processing between multiple warehouses, complex import cost allocation, etc.) beyond simple CRUD. Considering the possibility of providing mobile app-specific APIs or system integration (API) with external logistics partners in the future, a dedicated backend server is needed to fully protect and reuse business logic.
 
-### 결과 (Consequences)
-*   **장점**: 백엔드와 프론트엔드의 책임이 명확히 분리됩니다. NestJS의 의존성 주입(DI)과 모듈 시스템을 통해 복잡한 로직을 체계적으로 구조화할 수 있으며, Next.js의 App Router와 Server Components를 활용해 최상의 사용자 경험을 제공할 수 있습니다.
-*   **단점**: 두 개의 서버 프로젝트를 각각 관리하고 배포해야 하므로 초기 설정 공수가 증가합니다. 하지만 모노레포(ADR-002)를 통해 이를 완화합니다.
+### Decision
 
-### 상태 (Status)
+We adopt a hybrid architecture that separates **NestJS (Backend)**, which acts as the center of business logic and API server, and **Next.js (Frontend)**, which handles user interface and dashboard functions.
+
+### Consequences
+
+- **Pros**: Responsibilities of backend and frontend are clearly separated. Complex logic can be systematically structured through NestJS's dependency injection (DI) and module system, and the best user experience can be provided using Next.js's App Router and Server Components.
+- **Cons**: Initial setup effort increases as two server projects need to be managed and deployed separately. However, this is mitigated through a monorepo (ADR-002).
+
+### Status
+
 **Accepted**
 
 ---
 
-## ADR-002: Turborepo 기반 모노레포(Monorepo) 도입
+## ADR-002: Introduction of Turborepo-based Monorepo
 
-### 컨텍스트 (Context)
-NestJS 백엔드와 Next.js 프론트엔드는 동일한 데이터 모델(Entity), API 요청/응답 형식(DTO), 그리고 유틸리티 함수(날짜 계산, 종이 규격 변환 등)를 공유해야 합니다. 이를 멀티 레포지토리로 관리할 경우 코드 복사-붙여넣기가 빈번해지고, 타입 정의의 불일치로 인한 런타임 에러 발생 가능성이 높습니다.
+### Context
 
-### 결정 (Decision)
-**Turborepo**와 **pnpm workspace**를 사용하여 단일 리포지토리에서 백엔드, 프론트엔드, 공통 라이브러리를 관리하는 모노레포 구조를 구축합니다.
+NestJS backend and Next.js frontend must share the same data models (Entity), API request/response formats (DTO), and utility functions (date calculation, paper size conversion, etc.). Managing these in multi-repositories leads to frequent code copying and high probability of runtime errors due to type definition mismatches.
 
-### 결과 (Consequences)
-*   **장점**: `@chisan/api-types`, `@chisan/ui-shared` 등의 내부 패키지를 정의하여 프론트/백엔드 간 타입 안전성(Type Safety)을 100% 보장합니다. 단일 PR로 프론트/백엔드 동시 변경사항을 관리할 수 있습니다. Turborepo의 캐싱 기능을 통해 빌드 시간이 단축됩니다.
-*   **단점**: 모노레포 도구(pnpm, Turborepo)에 대한 팀의 학습 곡선이 필요합니다.
+### Decision
 
-### 상태 (Status)
+We establish a monorepo structure managing backend, frontend, and shared libraries in a single repository using **Turborepo** and **pnpm workspace**.
+
+### Consequences
+
+- **Pros**: We guarantee 100% type safety between frontend and backend by defining internal packages like `@chisan/api-types` and `@chisan/ui-shared`. Concurrent changes in frontend/backend can be managed in a single PR. Build time is reduced through Turborepo's caching function.
+- **Cons**: The team requires a learning curve for monorepo tools (pnpm, Turborepo).
+
+### Status
+
 **Accepted**
 
 ---
 
-## ADR-003: Supabase (PostgreSQL) 인프라 선정
+## ADR-003: Selection of Supabase (PostgreSQL) Infrastructure
 
-### 컨텍스트 (Context)
-지산페이퍼는 실시간 재고 현황이 매우 중요하며, 데이터 간의 관계(Parent Roll - Child Roll)가 엄격하게 정의되어야 합니다. 또한 초기 구축 시 인프라 관리 인력이 부재하므로 서버 운영 오버헤드를 최소화해야 합니다.
+### Context
 
-### 결정 (Decision)
-강력한 관계형 데이터베이스인 PostgreSQL을 기반으로 인증(Auth), 실시간 알림(Realtime), 스토리지 연동 기능을 제공하는 **Supabase**를 메인 데이터 플랫폼으로 사용합니다.
+Real-time inventory status is crucial for CHISAN Paper, and relationships between data (Parent Roll - Child Roll) must be strictly defined. Also, since there is no infrastructure management personnel during the initial build, server operation overhead must be minimized.
 
-### 결과 (Consequences)
-*   **장점**: SQL의 강력함을 유지하면서도 행 기반 보안(RLS)을 통해 안전한 데이터 접근을 구현할 수 있습니다. 실시간 구독 기능을 통해 창고 직원의 입고 처리가 사무직 직원의 대시보드에 즉시 반영됩니다.
-*   **단점**: 플랫폼 종속성 우려가 있으나, 표준 PostgreSQL을 사용하므로 최악의 경우 직접 호스팅하는 DB로의 이전이 가능합니다.
+### Decision
 
-### 상태 (Status)
+We use **Supabase**, which provides Auth, Realtime, and Storage integration based on the powerful relational database **PostgreSQL**, as the main data platform.
+
+### Consequences
+
+- **Pros**: We can implement secure data access through Row Level Security (RLS) while maintaining the power of SQL. Warehouse staff's stock-in processing is immediately reflected on office staff's dashboards through real-time subscription functions.
+- **Cons**: There is a concern about platform dependency, but since standard PostgreSQL is used, migration to a self-hosted DB is possible in the worst case.
+
+### Status
+
 **Accepted**
 
 ---
 
-## ADR-004: Cloudflare R2를 통한 미디어 저장소 구축
+## ADR-004: Building Media Storage via Cloudflare R2
 
-### 컨텍스트 (Context)
-제품 사진, 발주서 PDF, TDS 명세서 등 다양한 비정형 데이터를 저장해야 합니다. AWS S3는 업계 표준이지만 데이터 전송료(Egress) 비용이 부담될 수 있습니다.
+### Context
 
-### 결정 (Decision)
-S3와 완벽하게 호환되는 API를 제공하면서도 데이터 전송료가 무료인 **Cloudflare R2**를 객체 스토리지로 사용합니다.
+We need to store various unstructured data such as product photos, order PDFs, and TDS specifications. AWS S3 is the industry standard, but data transfer (Egress) costs can be burdensome.
 
-### 결과 (Consequences)
-*   **장점**: 저장 용량 대비 비용이 매우 저렴하며, Cloudflare CDN과 연동하여 전 세계 어디서나 빠른 속도로 파일에 접근할 수 있습니다. 기존 S3 SDK를 그대로 사용할 수 있어 개발 생산성이 높습니다.
-*   **단점**: AWS의 복잡한 IAM 설정보다는 단순하지만, 세밀한 접근 제어 설정에 차이가 있을 수 있습니다.
+### Decision
 
-### 상태 (Status)
+We use **Cloudflare R2** as object storage, which provides an API perfectly compatible with S3 while offering free data transfer.
+
+### Consequences
+
+- **Pros**: Cost relative to storage capacity is very low, and files can be accessed quickly from anywhere in the world by integrating with Cloudflare CDN. Development productivity is high as existing S3 SDKs can be used as is.
+- **Cons**: It is simpler than AWS's complex IAM settings, but there may be differences in fine-grained access control settings.
+
+### Status
+
 **Accepted**
 
 ---
 
-## ADR-005: EvoDev 방법론 및 FDD/TDD 채택
+## ADR-005: Adoption of EvoDev Methodology and FDD/TDD
 
-### 컨텍스트 (Context)
-전담 기획자나 상세 명세서가 없는 상태에서 개발이 진행되므로, 비즈니스 요구사항을 가시화하고 개발된 기능의 품질을 보장할 수 있는 체계가 필요합니다. 특히 종이 무게/길이 계산 등 정밀한 로직의 오류는 금전적 손실로 이어집니다.
+### Context
 
-### 결정 (Decision)
-**EvoDev(Evolutionary Development)** 방법론에 따라 Feature Map(DAG)으로 비즈니스 기능을 정의하고, 핵심 로직에 대해서는 **TDD(Test Driven Development)**를 실천합니다. 개발 단위는 **FDD(Feature Driven Development)**를 따릅니다.
+Since development proceeds without a dedicated planner or detailed specifications, a system is needed to visualize business requirements and guarantee the quality of developed functions. In particular, errors in precise logic such as paper weight/length calculations lead to financial losses.
 
-### 결과 (Consequences)
-*   **장점**: 비즈니스 가치가 높은 기능부터 점진적으로 개발하여 빠르게 피드백을 받을 수 있습니다. 테스트 코드가 존재하므로 리팩토링이나 기능 변경 시 심리적 안전감을 제공합니다.
-*   **단점**: 개발 초기 단계에서 테스트 코드 작성 및 Feature Map 설계에 따른 공수 증가가 발생합니다.
+### Decision
 
-### 상태 (Status)
+We define business functions with a Feature Map (DAG) according to the **EvoDev (Evolutionary Development)** methodology and practice **TDD (Test Driven Development)** for core logic. Development units follow **FDD (Feature Driven Development)**.
+
+### Consequences
+
+- **Pros**: We can receive feedback quickly by incrementally developing functions with high business value. The existence of test codes provides psychological safety during refactoring or function changes.
+- **Cons**: Effort increases in the early stages of development due to test code writing and Feature Map design.
+
+### Status
+
 **Accepted**
 
 ---
 
-## ADR-006: Google OAuth 2.0 기반 인증 시스템
+## ADR-006: Google OAuth 2.0 Based Authentication System
 
-### 컨텍스트 (Context)
-내부 직원들의 계정 관리를 단순화하고 보안을 강화해야 합니다. 별도의 회원가입 절차 없이 업무용 Google 계정으로 접근할 수 있어야 합니다.
+### Context
 
-### 결정 (Decision)
-Supabase Auth와 연동하여 **Google OAuth 2.0**을 유일한 로그인 수단으로 채택합니다.
+We need to simplify account management for internal staff and strengthen security. Access should be possible with a work Google account without a separate sign-up process.
 
-### 결과 (Consequences)
-*   **장점**: 비밀번호 관리 부담이 사라지고, Google Workspace의 보안 정책(2FA 등)을 그대로 활용할 수 있습니다. 직원 퇴사 시 Google 계정만 중지하면 시스템 접근이 차단됩니다.
-*   **단점**: Google 서비스 장애 시 시스템 로그인이 불가능해집니다.
+### Decision
 
-### 상태 (Status)
+We adopt **Google OAuth 2.0** as the only login method by integrating with Supabase Auth.
+
+### Consequences
+
+- **Pros**: The burden of password management disappears, and Google Workspace's security policies (2FA, etc.) can be utilized as is. System access is blocked just by suspending the Google account when an employee leaves.
+- **Cons**: System login becomes impossible during Google service outages.
+
+### Status
+
 **Accepted**
 
 ---
 
-## ADR-007: Vitest 기반 테스트 프레임워크 구축
+## ADR-007: Establishing Vitest Based Test Framework
 
-### 컨텍스트 (Context)
-모노레포 환경에서 백엔드(NestJS)와 프론트엔드(Next.js)의 테스트를 빠르고 효율적으로 수행해야 합니다.
+### Context
 
-### 결정 (Decision)
-Vite 생태계의 고성능 테스트 러너인 **Vitest**를 전사 테스트 프레임워크로 채택합니다.
+We need to perform backend (NestJS) and frontend (Next.js) tests quickly and efficiently in a monorepo environment.
 
-### 결과 (Consequences)
-*   **장점**: Jest 대비 월등히 빠른 실행 속도를 제공하며, Vite 설정을 공유하여 복잡한 타입스크립트 및 ESM 설정을 간소화할 수 있습니다.
-*   **단점**: NestJS의 기본 테스트 설정(Jest)을 Vitest로 마이그레이션하는 초기 설정 작업이 필요합니다.
+### Decision
 
-### 상태 (Status)
+We adopt **Vitest**, a high-performance test runner in the Vite ecosystem, as the company-wide test framework.
+
+### Consequences
+
+- **Pros**: It provides significantly faster execution speed compared to Jest and can simplify complex TypeScript and ESM settings by sharing Vite settings.
+- **Cons**: Initial setup work is required to migrate NestJS's default test settings (Jest) to Vitest.
+
+### Status
+
 **Accepted**

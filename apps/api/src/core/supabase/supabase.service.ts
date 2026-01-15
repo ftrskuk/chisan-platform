@@ -11,7 +11,9 @@ export class SupabaseService implements OnModuleInit {
 
   onModuleInit() {
     const url = this.configService.get<string>("SUPABASE_URL");
-    const serviceKey = this.configService.get<string>("SUPABASE_SERVICE_ROLE_KEY");
+    const serviceKey = this.configService.get<string>(
+      "SUPABASE_SERVICE_ROLE_KEY",
+    );
 
     if (!url || !serviceKey) {
       this.logger.warn("Supabase credentials not configured");
@@ -36,8 +38,14 @@ export class SupabaseService implements OnModuleInit {
   }
 
   createClientWithToken(token: string): SupabaseClient {
-    const url = this.configService.get<string>("SUPABASE_URL")!;
-    const anonKey = this.configService.get<string>("SUPABASE_ANON_KEY")!;
+    const url = this.configService.get<string>("SUPABASE_URL");
+    const anonKey = this.configService.get<string>("SUPABASE_ANON_KEY");
+
+    if (!url || !anonKey) {
+      throw new Error(
+        "Missing required Supabase configuration (SUPABASE_URL or SUPABASE_ANON_KEY)",
+      );
+    }
 
     return createClient(url, anonKey, {
       global: {

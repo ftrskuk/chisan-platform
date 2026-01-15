@@ -103,7 +103,7 @@ export class PartnersService {
 
     const { data, error } = await query;
     if (error) throw new BadRequestException(error.message);
-    return (data as DbPartner[]).map(this.mapPartner);
+    return (data as DbPartner[]).map((db) => this.mapPartner(db));
   }
 
   async findSuppliers(): Promise<Partner[]> {
@@ -135,7 +135,7 @@ export class PartnersService {
 
     return {
       ...this.mapPartner(partner as DbPartner),
-      brands: ((brands as DbBrand[]) ?? []).map(this.mapBrand),
+      brands: ((brands as DbBrand[]) ?? []).map((db) => this.mapBrand(db)),
     };
   }
 
@@ -240,7 +240,7 @@ export class PartnersService {
       .order("name");
 
     if (error) throw new BadRequestException(error.message);
-    return ((data as DbBrand[]) ?? []).map(this.mapBrand);
+    return ((data as DbBrand[]) ?? []).map((db) => this.mapBrand(db));
   }
 
   async getBrands(partnerId: string): Promise<Brand[]> {
@@ -255,7 +255,7 @@ export class PartnersService {
       .order("name");
 
     if (error) throw new BadRequestException(error.message);
-    return ((data as DbBrand[]) ?? []).map(this.mapBrand);
+    return ((data as DbBrand[]) ?? []).map((db) => this.mapBrand(db));
   }
 
   async createBrand(

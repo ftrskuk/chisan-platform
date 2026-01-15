@@ -1,88 +1,88 @@
 # CHISAN Platform Documentation
 
-> 지산페이퍼 통합 비즈니스 플랫폼 - 수입, 재고, 생산 관리 시스템
+> CHISAN Paper Integrated Business Platform - Import, Inventory, Production Management System
 
 ## Quick Navigation
 
-### 1. Overview (개요)
+### 1. Overview
 
-| Document | Description |
-|----------|-------------|
-| [Business Context](./01-overview/business-context.md) | 사업 배경, 도메인 설명, 용어집 |
-| [Vision & Scope](./01-overview/vision-and-scope.md) | 프로젝트 비전, 목표, 범위 정의 |
-| [Tech Decisions](./01-overview/tech-decisions.md) | 기술 결정 기록 (ADR) |
+| Document                                              | Description                                       |
+| ----------------------------------------------------- | ------------------------------------------------- |
+| [Business Context](./01-overview/business-context.md) | Business background, domain description, glossary |
+| [Vision & Scope](./01-overview/vision-and-scope.md)   | Project vision, goals, scope definition           |
+| [Tech Decisions](./01-overview/tech-decisions.md)     | Architecture Decision Records (ADR)               |
 
-### 2. Architecture (아키텍처)
+### 2. Architecture
 
-| Document | Description |
-|----------|-------------|
-| [Architecture Overview](./02-architecture/overview.md) | Hybrid 아키텍처 전체 구조 |
-| [Backend (NestJS)](./02-architecture/backend.md) | NestJS 백엔드 설계 |
-| [Frontend (Next.js)](./02-architecture/frontend.md) | Next.js 프론트엔드 설계 |
-| [Database](./02-architecture/database.md) | Supabase PostgreSQL 스키마 원칙 |
-| [Data Access Boundaries](./02-architecture/data-access-boundaries.md) | 데이터 접근 경계, RLS 정책, API vs Direct 규칙 |
-| [State Transitions](./02-architecture/state-transitions.md) | 핵심 엔티티 상태 머신 정의 |
-| [Operations](./02-architecture/operations.md) | 환경 관리, 백업/복구, DR, 모니터링 |
+| Document                                                              | Description                                               |
+| --------------------------------------------------------------------- | --------------------------------------------------------- |
+| [Architecture Overview](./02-architecture/overview.md)                | Hybrid architecture structure                             |
+| [Backend (NestJS)](./02-architecture/backend.md)                      | NestJS backend design                                     |
+| [Frontend (Next.js)](./02-architecture/frontend.md)                   | Next.js frontend design                                   |
+| [Database](./02-architecture/database.md)                             | Supabase PostgreSQL schema principles                     |
+| [Data Access Boundaries](./02-architecture/data-access-boundaries.md) | Data access boundaries, RLS policies, API vs Direct rules |
+| [State Transitions](./02-architecture/state-transitions.md)           | Core entity state machine definitions                     |
+| [Operations](./02-architecture/operations.md)                         | Environment management, backup/restore, DR, monitoring    |
 
-### 3. Modules (모듈)
+### 3. Modules
 
-| Document | Description | Phase |
-|----------|-------------|-------|
-| [Module Template](./03-modules/_template.md) | 모듈 문서 작성 템플릿 | - |
-| [Inventory (재고관리)](./03-modules/inventory.md) | WMS 재고관리 시스템 | Phase 1 |
-| [Import (수입관리)](./03-modules/import.md) | 수입/발주 관리 | Phase 1 |
-| [Production (생산관리)](./03-modules/production.md) | 슬리팅 생산관리 | Phase 1 |
+| Document                                     | Description                     | Phase   |
+| -------------------------------------------- | ------------------------------- | ------- |
+| [Module Template](./03-modules/_template.md) | Module documentation template   | -       |
+| [Inventory](./03-modules/inventory.md)       | WMS Inventory Management System | Phase 1 |
+| [Import](./03-modules/import.md)             | Import/Order Management         | Phase 1 |
+| [Production](./03-modules/production.md)     | Slitting Production Management  | Phase 1 |
 
 ### 4. Feature Map (EvoDev)
 
-| Document | Description |
-|----------|-------------|
-| [Feature Map Overview](./04-feature-map/overview.md) | EvoDev 방법론, Feature Map 개요 |
-| [Phase 1: Foundation](./04-feature-map/phase-1-foundation.md) | Phase 1 상세 Feature 명세 |
-| [Foundation Specification](./04-feature-map/foundation-spec.md) | Foundation 상세 (역할, 권한, 감사 로그) |
+| Document                                                        | Description                                         |
+| --------------------------------------------------------------- | --------------------------------------------------- |
+| [Feature Map Overview](./04-feature-map/overview.md)            | EvoDev methodology, Feature Map overview            |
+| [Phase 1: Foundation](./04-feature-map/phase-1-foundation.md)   | Phase 1 detailed feature specifications             |
+| [Foundation Specification](./04-feature-map/foundation-spec.md) | Foundation details (Roles, Permissions, Audit Logs) |
 
-### 5. Development (개발 가이드)
+### 5. Development
 
-| Document | Description |
-|----------|-------------|
-| [Getting Started](./05-development/getting-started.md) | 개발환경 셋업 가이드 |
-| [Coding Standards](./05-development/coding-standards.md) | 코딩 컨벤션 및 규칙 |
+| Document                                                 | Description                         |
+| -------------------------------------------------------- | ----------------------------------- |
+| [Getting Started](./05-development/getting-started.md)   | Development environment setup guide |
+| [Coding Standards](./05-development/coding-standards.md) | Coding conventions and rules        |
 
-### References (참고 자료)
+### References
 
-| Document | Description |
-|----------|-------------|
-| [Domain Glossary](./references/domain-glossary.md) | 도메인 용어집 (한/영) |
-| [EvoDev Paper](./references/evodev-paper.pdf) | EvoDev 방법론 논문 |
+| Document                                           | Description                      |
+| -------------------------------------------------- | -------------------------------- |
+| [Domain Glossary](./references/domain-glossary.md) | Domain Glossary (Korean/English) |
+| [EvoDev Paper](./references/evodev-paper.pdf)      | EvoDev methodology paper         |
 
 ---
 
 ## Document Status
 
-| Section | Status | Last Updated |
-|---------|--------|--------------|
-| 01-overview | Complete | 2026-01-14 |
-| 02-architecture | Complete | 2026-01-14 |
-| 03-modules | Complete | 2026-01-14 |
-| 04-feature-map | Complete | 2026-01-14 |
-| 05-development | Complete | 2026-01-14 |
-| references | Complete | 2026-01-14 |
+| Section         | Status   | Last Updated |
+| --------------- | -------- | ------------ |
+| 01-overview     | Complete | 2026-01-14   |
+| 02-architecture | Complete | 2026-01-14   |
+| 03-modules      | Complete | 2026-01-14   |
+| 04-feature-map  | Complete | 2026-01-14   |
+| 05-development  | Complete | 2026-01-14   |
+| references      | Complete | 2026-01-14   |
 
-## Reading Order (권장 순서)
+## Reading Order
 
-새로 합류한 팀원을 위한 권장 문서 읽기 순서:
+Recommended reading order for new team members:
 
 1. **Day 1**: Business Context → Vision & Scope → Domain Glossary
 2. **Day 2**: Architecture Overview → Tech Decisions
 3. **Day 3**: Getting Started → Coding Standards
 4. **Day 4**: Feature Map Overview → Phase 1 Foundation
-5. **Day 5+**: 담당 모듈 문서 (Inventory / Import / Production)
+5. **Day 5+**: Module Documentation (Inventory / Import / Production)
 
 ## Contributing
 
-문서 수정 시 다음 규칙을 따라주세요:
+Please follow these rules when modifying documents:
 
-1. 기술 용어는 영어로, 설명은 한국어로 작성
-2. Mermaid 다이어그램 활용 권장
-3. 변경 시 `Last Updated` 날짜 업데이트
-4. 새 문서 추가 시 이 index.md에도 링크 추가
+1. Technical terms in English, explanations in English
+2. Use Mermaid diagrams
+3. Update `Last Updated` date when changing
+4. Add link to this index.md when adding new documents

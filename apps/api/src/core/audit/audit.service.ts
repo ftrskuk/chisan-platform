@@ -1,4 +1,11 @@
-import { Injectable, Inject, Scope } from "@nestjs/common";
+import {
+  Injectable,
+  Inject,
+  Scope,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
 import { REQUEST } from "@nestjs/core";
 import { Request } from "express";
 import type { AuditCategory } from "@repo/shared";
@@ -28,6 +35,8 @@ interface AuditLogQuery {
 
 @Injectable({ scope: Scope.REQUEST })
 export class AuditService {
+  private readonly logger = new Logger(AuditService.name);
+
   constructor(
     private readonly supabaseService: SupabaseService,
     @Inject(REQUEST) private readonly request: Request,
@@ -41,7 +50,7 @@ export class AuditService {
 
     const client = this.supabaseService.getServiceClient();
 
-    await client.from("audit_logs").insert({
+    const { error } = await client.from("audit_logs").insert({
       actor_id: user.id,
       actor_email: user.email,
       actor_role: user.roles[0] ?? "unknown",
@@ -55,6 +64,11 @@ export class AuditService {
       user_agent: this.request.headers["user-agent"],
       request_id: this.request.headers["x-request-id"] as string | undefined,
     });
+
+    if (error) {
+      // Log error but don't throw - audit failures shouldn't break business logic
+      this.logger.error(`Audit log failed: ${error.message}`);
+    }
   }
 
   async findAll(query: AuditLogQuery) {
@@ -94,7 +108,7 @@ export class AuditService {
     const { data, error, count } = await queryBuilder;
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return {
@@ -115,7 +129,7 @@ export class AuditService {
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new NotFoundException(`Audit log not found: ${error.message}`);
     }
 
     return data;

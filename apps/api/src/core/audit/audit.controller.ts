@@ -15,7 +15,7 @@ import { Roles } from "../auth/decorators/roles.decorator";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { AuditService } from "./audit.service";
 
-@Controller("api/v1/audit-logs")
+@Controller("audit-logs")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("admin")
 export class AuditController {

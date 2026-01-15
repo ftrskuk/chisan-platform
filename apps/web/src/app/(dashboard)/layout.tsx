@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { ErrorBoundary } from "@/components/error-boundary";
 import type { UserRole, AuthUser } from "@repo/shared";
+
+export const dynamic = "force-dynamic";
 
 export default async function DashboardLayout({
   children,
@@ -11,6 +13,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
   const {
     data: { user: authUser },
@@ -20,13 +23,13 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const { data: dbUser } = await supabase
+  const { data: dbUser } = await serviceClient
     .from("users")
     .select("display_name, avatar_url")
     .eq("id", authUser.id)
     .single();
 
-  const { data: userRoles } = await supabase
+  const { data: userRoles } = await serviceClient
     .from("user_roles")
     .select("role")
     .eq("user_id", authUser.id);

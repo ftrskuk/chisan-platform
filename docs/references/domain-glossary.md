@@ -1,154 +1,155 @@
-# 도메인 용어 사전 (Domain Glossary)
+# Domain Glossary
 
-이 문서는 지산페이퍼(CHISAN Paper) 플랫폼에서 사용되는 핵심 도메인 용어들을 정의합니다. 모든 시스템 개발, 데이터베이스 설계 및 사용자 매뉴얼 작성 시 이 용어 사전을 기준으로 합니다.
+This document defines core domain terms used in the CHISAN Paper platform. All system development, database design, and user manual creation are based on this glossary.
 
-## 1. 개요 (Overview)
+## 1. Overview
 
-### 문서 목적
-- 지산페이퍼 비즈니스 도메인(수입, 창고, 생산, 유통)에 대한 전사적 공통 언어(Ubiquitous Language) 확립
-- 부서 간 커뮤니케이션 오류 감소 및 시스템 데이터 일관성 확보
-- 신규 인원 및 협력사에 대한 교육 자료 제공
+### Purpose
 
-### 용어 사용 규칙
-- **한글 용어**: 사용자 인터페이스(UI) 및 보고서에서 사용되는 공식 명칭
-- **영문 용어**: 코드(변수명, 클래스명) 및 API 명세에서 사용되는 공식 명칭
-- **약어/코드**: 데이터베이스 테이블이나 시스템 내부 식별자로 사용되는 코드
+- Establish a ubiquitous language for the CHISAN Paper business domain (Import, Inventory, Production, Distribution) across the company.
+- Reduce communication errors between departments and ensure system data consistency.
+- Provide training materials for new personnel and partners.
 
----
+### Naming Conventions
 
-## 2. 제품 용어 (Product Terms)
-
-종이 제품의 형태 및 물리적 특성에 관한 용어입니다.
-
-| 한국어 | English | 코드 | 설명 | 예시 |
-| :--- | :--- | :--- | :--- | :--- |
-| **원지** | Parent Roll | PR | 제지사에서 생산되어 수입된 거대 롤. 슬리팅 가공의 원자재입니다. | 1000mm 폭의 아트지 원지 |
-| **슬리팅 롤** | Slitted Roll | SR | 원지를 고객 사양에 맞춰 좁은 폭으로 절단한 완제품 롤입니다. | 250mm 폭의 가공 완료 롤 |
-| **시트** | Sheet | SH | 롤 형태가 아닌, 평판 형태로 재단된 종이입니다. | A4, B4 등 규격화된 평판지 |
-| **평량** | Grammage | - | 종이의 단위 면적당 무게(g/m²)입니다. 두께와 강도를 나타냅니다. | 80g/m², 150g/m² |
-| **지폭** | Width | - | 롤 종이의 가로 너비(mm)입니다. 슬리팅의 기준 치수입니다. | 1000mm, 625mm |
-| **지름** | Diameter | - | 롤 제품의 전체 외경(mm)입니다. 운송 및 적재 시 중요합니다. | 1200mm |
-| **지관** | Core | - | 종이가 감겨 있는 중심부의 종이 관입니다. 내경이 중요합니다. | 3인치 지관, 6인치 지관 |
-| **권취방향** | Winding Direction | - | 종이가 감기는 방향(IN: 안쪽 면이 밖으로, OUT: 바깥 면이 밖으로)입니다. | OUT 방향 권취 |
-| **잔여물** | Remnant | RM | 슬리팅 작업 후 남은, 재사용 가능한 수준의 원지입니다. | 작업 후 남은 150mm 폭 롤 |
+- **Term**: Official name used in User Interface (UI) and reports.
+- **Code**: Code used as database tables or system internal identifiers.
 
 ---
 
-## 3. 재고 용어 (Inventory Terms)
+## 2. Product Terms
 
-창고 관리 및 물류 흐름에 관한 용어입니다.
+Terms related to the form and physical characteristics of paper products.
 
-| 한국어 | English | 설명 | 실무 팁 |
-| :--- | :--- | :--- | :--- |
-| **입고** | Stock-In | 구매, 생산 완료, 반품 등으로 재고가 창고로 들어오는 행위입니다. | 바코드 스캔을 통한 입고 처리 필수 |
-| **출고** | Stock-Out | 판매, 생산 투입, 폐기 등으로 재고가 창고에서 나가는 행위입니다. | 선입선출(FIFO) 원칙 준수 권장 |
-| **재고실사** | Stocktaking | 장부상 재고와 실제 실물 재고가 일치하는지 전수 조사하는 과정입니다. | 매 분기 1회 정기 실사 수행 |
-| **로케이션** | Location | 창고 내 제품이 보관되는 세부 위치(Rack, Zone)입니다. | 예: A-01-02 (A구역 1번 랙 2단) |
-| **LOT** | Lot | 동일한 생산 조건(동일 원지, 동일 날짜)에서 생산된 제품 그룹입니다. | 품질 추적(Traceability)의 핵심 단위 |
-| **가용재고** | Available Stock | 현재 창고에 있으며 즉시 판매나 가공에 투입 가능한 재고입니다. | 전체 재고 - 예약 재고 |
-| **예약재고** | Reserved Stock | 주문이 접수되었거나 생산 지시가 내려져 출고 대기 중인 재고입니다. | 가용 재고 계산 시 제외됨 |
-| **안전재고** | Safety Stock | 리드 타임 및 수요 변동에 대비해 상시 보유해야 하는 최소 재고량입니다. | 품목별 평량/지폭 기준으로 설정 |
-
----
-
-## 4. 수입/발주 용어 (Import Terms)
-
-해외 소싱 및 구매 프로세스에 관한 용어입니다.
-
-| 한국어 | English | 설명 | 비고 |
-| :--- | :--- | :--- | :--- |
-| **발주** | Purchase Order (PO) | 공급업체에게 품목, 수량, 가격을 명시하여 주문하는 행위입니다. | 시스템에서 PO 번호 자동 생성 |
-| **거래처** | Partner/Vendor | 물품을 공급하는 제조사나 물건을 구매하는 고객사를 통칭합니다. | 국내외 거래처 구분 관리 |
-| **선적** | Shipment | 제품이 배나 비행기에 실려 운송이 시작되는 단계입니다. | B/L(선하증권) 발행 시점 |
-| **입항** | Arrival | 운송 수단이 목적지 항구(주로 부산항, 인천항)에 도착하는 것입니다. | ETA(Expected Time of Arrival) 관리 |
-| **통관** | Customs Clearance | 세관에 수입 신고를 하고 관세 및 부가세를 납부하여 수입 허가를 받는 과정입니다. | 통관 대행사를 통해 진행 |
-| **인보이스** | Invoice | 거래 내용과 금액이 적힌 송장으로, 결제의 근거가 됩니다. | Commercial Invoice (C/I) |
-| **L/C** | Letter of Credit | 은행이 대금 지급을 보증하는 신용장 방식의 결제 조건입니다. | 대형 제지사 거래 시 주로 사용 |
-| **T/T** | Telegraphic Transfer | 전신환 송금 방식으로, 계좌 이체를 통한 결제입니다. | 사후 송금 또는 선입금 방식 |
-| **FOB** | Free On Board | 본선 인도 조건. 수출자가 배에 실어주는 시점까지 비용을 부담합니다. | 지산페이퍼가 해상 운임 및 보험료 부담 |
-| **CIF** | Cost, Insurance, Freight | 운임보험료 포함 조건. 수출자가 목적지 항구까지 비용을 부담합니다. | 수입 단가에 운임/보험료 포함됨 |
-| **Lead Time** | Lead Time | 발주 시점부터 창고 입고 시점까지 소요되는 전체 기간입니다. | 핀란드 수입의 경우 보통 60~90일 |
-| **MOQ** | Min. Order Quantity | 1회 발주 시 주문해야 하는 최소 수량입니다. | 컨테이너(20ft/40ft) 단위 기준 |
+| Term                  | Code | Description                                                                              | Example                               |
+| :-------------------- | :--- | :--------------------------------------------------------------------------------------- | :------------------------------------ |
+| **Parent Roll**       | PR   | Huge roll produced and imported from paper mills. Raw material for slitting processing.  | 1000mm width art paper parent roll    |
+| **Slitted Roll**      | SR   | Finished roll cut to narrow width according to customer specifications from parent roll. | 250mm width processed roll            |
+| **Sheet**             | SH   | Paper cut into flat sheet form, not roll form.                                           | Standardized sheets like A4, B4       |
+| **Grammage**          | -    | Weight per unit area of paper (g/m²). Indicates thickness and strength.                  | 80g/m², 150g/m²                       |
+| **Width**             | -    | Horizontal width (mm) of roll paper. Standard dimension for slitting.                    | 1000mm, 625mm                         |
+| **Diameter**          | -    | Outer diameter (mm) of roll product. Important for transport and loading.                | 1200mm                                |
+| **Core**              | -    | Paper tube in the center where paper is wound. Inner diameter is important.              | 3-inch core, 6-inch core              |
+| **Winding Direction** | -    | Direction in which paper is wound (IN: inside face out, OUT: outside face out).          | OUT direction winding                 |
+| **Remnant**           | RM   | Raw material remaining after slitting work, reusable level.                              | 150mm width roll remaining after work |
 
 ---
 
-## 5. 생산 용어 (Production Terms)
+## 3. Inventory Terms
 
-슬리팅 가공 공정과 관련된 용어입니다.
+Terms related to warehouse management and logistics flow.
 
-| 한국어 | English | 설명 | 수식 |
-| :--- | :--- | :--- | :--- |
-| **슬리팅** | Slitting | 넓은 폭의 원지를 회전 칼날을 이용해 좁은 폭으로 자르는 공정입니다. | - |
-| **생산지시** | Production Order | 가공해야 할 품목, 규격, 수량, 일정을 현장에 지시하는 문서입니다. | 작업 지시서(Job Ticket) |
-| **투입** | Input/Consumption | 가공을 위해 창고에서 불출되어 설비에 장착된 원자재(원지)입니다. | 투입 중량(kg) |
-| **산출** | Output | 가공 결과로 생산된 완제품(슬리팅 롤) 및 잔여물입니다. | 산출 중량(kg) |
-| **손실률** | Loss Rate | 공정 중 발생한 파지(Trim)나 불량으로 인한 손실 비중입니다. | `(투입 - 산출) / 투입 * 100` |
-| **수율** | Yield | 원자재 투입 대비 실제 완제품 생산량이 차지하는 비율입니다. | `완제품 중량 / 투입 중량 * 100` |
-| **Trim** | Trim/Waste | 슬리팅 시 양쪽 끝을 일정하게 맞추기 위해 잘라내는 자투리입니다. | 폐기물로 처리되나 데이터 기록 필수 |
-| **조장** | Operator | 슬리팅 설비를 직접 조작하고 작업을 수행하는 숙련된 작업자입니다. | 생산 실적 등록 주체 |
-
----
-
-## 6. 업무 용어 (Business Terms)
-
-일반적인 비즈니스 및 행정 프로세스 용어입니다.
-
-| 한국어 | English | 설명 | 예시 |
-| :--- | :--- | :--- | :--- |
-| **TDS** | Technical Data Sheet | 제품의 물리적, 화학적 특성을 기재한 기술 자료표입니다. | 평량, 인장강도, 백색도 등 표기 |
-| **결재** | Approval | 문서나 작업 내용을 상급자가 검토하고 승인하는 프로세스입니다. | 발주서 결재, 견적 승인 |
-| **견적** | Quotation | 고객의 요청에 따라 공급 가능한 가격과 조건을 미리 제시하는 것입니다. | 견적서 유효기간 관리 필요 |
-| **수주** | Sales Order | 고객으로부터 주문을 받아 판매 계약이 성립된 상태입니다. | 수주 번호 기반 출고 관리 |
-| **마감** | Closing | 특정 기간(월, 분기)의 거래를 확정하고 정산하는 행위입니다. | 월말 세금계산서 발행 마감 |
+| Term                | Description                                                                                        | Practical Tip                                     |
+| :------------------ | :------------------------------------------------------------------------------------------------- | :------------------------------------------------ |
+| **Stock-In**        | The act of inventory coming into the warehouse due to purchase, production completion, or returns. | Stock-in processing via barcode scan is mandatory |
+| **Stock-Out**       | The act of inventory leaving the warehouse for sales, production input, or disposal.               | Recommended to follow FIFO principle              |
+| **Stocktaking**     | The process of inspecting whether book inventory matches actual physical inventory.                | Perform regular stocktaking once a quarter        |
+| **Location**        | Detailed location (Rack, Zone) where products are stored in the warehouse.                         | e.g., A-01-02 (Zone A, Rack 1, Shelf 2)           |
+| **Lot**             | Group of products produced under the same production conditions (same parent roll, same date).     | Core unit of Traceability                         |
+| **Available Stock** | Inventory currently in the warehouse and immediately available for sales or processing input.      | Total Stock - Reserved Stock                      |
+| **Reserved Stock**  | Inventory waiting for shipment due to received orders or issued production orders.                 | Excluded when calculating available stock         |
+| **Safety Stock**    | Minimum inventory to be held at all times to prepare for lead time and demand fluctuations.        | Set based on grammage/width per item              |
 
 ---
 
-## 7. 시스템 용어 (System Terms)
+## 4. Import Terms
 
-플랫폼 구축 및 IT 기술 관련 용어입니다.
+Terms related to overseas sourcing and purchasing processes.
 
-| 용어 | 풀네임 | 설명 |
-| :--- | :--- | :--- |
-| **WMS** | Warehouse Management System | 창고 내 입출고, 위치, 재고 상태를 관리하는 시스템입니다. |
-| **ERP** | Enterprise Resource Planning | 전사적 자원 관리 시스템으로, 인사, 회계, 수입, 판매를 통합 관리합니다. |
-| **RLS** | Row Level Security | 데이터베이스의 각 행(row)에 대해 사용자별 접근 권한을 제어하는 보안 기술입니다. |
-| **DAG** | Directed Acyclic Graph | 방향성 비순환 그래프. 제품의 이력(Lineage) 추적 시 원지-가공-제품 관계 표현에 사용됩니다. |
-| **API** | Application Programming Interface | 시스템 간 데이터 통신을 위한 규약입니다. |
-| **Audit Log** | Audit Log | 데이터의 생성, 수정, 삭제 이력을 기록하여 변경 과정을 추적할 수 있게 하는 로그입니다. |
-
----
-
-## 8. 단위 (Units)
-
-측정 및 수량 표시에 사용되는 표준 단위입니다.
-
-| 단위 | 설명 | 사용 분야 | 예시 |
-| :--- | :--- | :--- | :--- |
-| **g/m²** | 평량 (Grammage) | 종이 스펙 정의 | 80 g/m² (복사용지 수준) |
-| **mm** | 밀리미터 | 지폭, 지름, 지관 내경 등 모든 치수 | 1000mm Width |
-| **kg** | 킬로그램 | 제품 무게, 투입/산출 중량 | 500kg Roll |
-| **m** | 미터 | 롤의 전체 길이 | 5000m Length |
-| **roll** | 롤 (수량 단위) | 롤 제품의 개수 | 10 rolls |
-| **sheet** | 시트 (수량 단위) | 평판지 제품의 매수 | 500 sheets |
-| **R** | Ream (연) | 평판지 대량 수량 단위 (보통 500매) | 10 Reams |
+| Term                    | Description                                                                                           | Note                                            |
+| :---------------------- | :---------------------------------------------------------------------------------------------------- | :---------------------------------------------- |
+| **Purchase Order (PO)** | The act of ordering by specifying item, quantity, and price to the supplier.                          | System automatically generates PO number        |
+| **Partner/Vendor**      | Collectively refers to manufacturers supplying goods or customers purchasing goods.                   | Manage domestic/overseas partners separately    |
+| **Shipment**            | The stage where products are loaded onto a ship or plane and transport begins.                        | B/L (Bill of Lading) issuance time              |
+| **Arrival**             | Transport vehicle arriving at the destination port (mainly Busan Port, Incheon Port).                 | Manage ETA (Expected Time of Arrival)           |
+| **Customs Clearance**   | The process of declaring imports to customs, paying tariffs and VAT, and obtaining import permission. | Proceed through customs broker                  |
+| **Invoice**             | A bill stating transaction details and amount, serving as the basis for payment.                      | Commercial Invoice (C/I)                        |
+| **L/C**                 | Letter of Credit. A payment condition where the bank guarantees payment.                              | Mainly used when trading with large paper mills |
+| **T/T**                 | Telegraphic Transfer. Payment via bank transfer.                                                      | Post-remittance or advance payment              |
+| **FOB**                 | Free On Board. The exporter bears costs until the point of loading onto the ship.                     | CHISAN Paper bears ocean freight and insurance  |
+| **CIF**                 | Cost, Insurance, Freight. The exporter bears costs up to the destination port.                        | Freight/Insurance included in import unit price |
+| **Lead Time**           | Total time taken from order placement to warehouse stock-in.                                          | Usually 60~90 days for imports from Finland     |
+| **MOQ**                 | Min. Order Quantity. Minimum quantity to order at one time.                                           | Based on Container (20ft/40ft) unit             |
 
 ---
 
-## 9. 제품 상태 코드 (Status Codes)
+## 5. Production Terms
 
-시스템 내부에서 관리되는 주요 상태 값입니다.
+Terms related to slitting processing.
+
+| Term                  | Description                                                                                        | Formula                                          |
+| :-------------------- | :------------------------------------------------------------------------------------------------- | :----------------------------------------------- |
+| **Slitting**          | A process of cutting wide parent rolls into narrow rolls using rotating blades.                    | -                                                |
+| **Production Order**  | A document instructing the field on items, specifications, quantity, and schedule to be processed. | Job Ticket                                       |
+| **Input/Consumption** | Raw material (Parent Roll) issued from warehouse and mounted on equipment for processing.          | Input Weight (kg)                                |
+| **Output**            | Finished goods (Slitted Roll) and remnants produced as a result of processing.                     | Output Weight (kg)                               |
+| **Loss Rate**         | Proportion of loss due to trim or defects occurring during the process.                            | `(Input - Output) / Input * 100`                 |
+| **Yield**             | The ratio of actual finished product production compared to raw material input.                    | `Finished Product Weight / Input Weight * 100`   |
+| **Trim/Waste**        | Scraps cut off to align both ends during slitting.                                                 | Treated as waste but data recording is mandatory |
+| **Operator**          | A skilled worker who directly operates slitting equipment and performs tasks.                      | Subject of production performance registration   |
+
+---
+
+## 6. Business Terms
+
+General business and administrative process terms.
+
+| Term                           | Description                                                                             | Example                                     |
+| :----------------------------- | :-------------------------------------------------------------------------------------- | :------------------------------------------ |
+| **TDS** (Technical Data Sheet) | Technical data sheet listing physical and chemical properties of the product.           | Grammage, tensile strength, whiteness, etc. |
+| **Approval**                   | Process where a superior reviews and approves documents or work details.                | PO approval, quotation approval             |
+| **Quotation**                  | Presenting available price and conditions in advance at customer's request.             | Need to manage quotation validity period    |
+| **Sales Order**                | State where a sales contract is established by receiving an order from a customer.      | Shipment management based on SO number      |
+| **Closing**                    | The act of finalizing and settling transactions for a specific period (month, quarter). | Month-end tax invoice issuance closing      |
+
+---
+
+## 7. System Terms
+
+Terms related to platform construction and IT technology.
+
+| Term          | Full Name                         | Description                                                                                 |
+| :------------ | :-------------------------------- | :------------------------------------------------------------------------------------------ |
+| **WMS**       | Warehouse Management System       | System managing stock-in/out, location, and inventory status in the warehouse.              |
+| **ERP**       | Enterprise Resource Planning      | Integrated management system for HR, accounting, import, and sales.                         |
+| **RLS**       | Row Level Security                | Security technology controlling access rights per user for each row in the database.        |
+| **DAG**       | Directed Acyclic Graph            | Used to express Parent Roll-Processing-Product relationships when tracking product lineage. |
+| **API**       | Application Programming Interface | Protocol for data communication between systems.                                            |
+| **Audit Log** | Audit Log                         | Log recording history of data creation, modification, and deletion to track changes.        |
+
+---
+
+## 8. Units
+
+Standard units used for measurement and quantity indication.
+
+| Unit      | Description | Usage Area                                         | Example                    |
+| :-------- | :---------- | :------------------------------------------------- | :------------------------- |
+| **g/m²**  | Grammage    | Paper spec definition                              | 80 g/m² (Copy paper level) |
+| **mm**    | Millimeter  | All dimensions like width, diameter, core ID       | 1000mm Width               |
+| **kg**    | Kilogram    | Product weight, input/output weight                | 500kg Roll                 |
+| **m**     | Meter       | Total length of roll                               | 5000m Length               |
+| **roll**  | Roll        | Count of roll products                             | 10 rolls                   |
+| **sheet** | Sheet       | Count of sheet products                            | 500 sheets                 |
+| **R**     | Ream        | Bulk quantity unit for sheets (usually 500 sheets) | 10 Reams                   |
+
+---
+
+## 9. Status Codes
+
+Major status values managed within the system.
 
 - **Inventory Status**:
-  - `AVAILABLE`: 가용 (즉시 출고 가능)
-  - `RESERVED`: 예약 (주문/가공 대기)
-  - `IN_TRANSIT`: 운송 중 (입항 전)
-  - `QUARANTINED`: 격리 (품질 문제 발생)
-  - `DISPOSED`: 폐기 (재고 제외)
+  - `AVAILABLE`: Available (Immediate stock-out possible)
+  - `RESERVED`: Reserved (Waiting for order/processing)
+  - `IN_TRANSIT`: In Transit (Before arrival)
+  - `QUARANTINED`: Quarantined (Quality issue occurred)
+  - `DISPOSED`: Disposed (Excluded from inventory)
 
 - **Import Status**:
-  - `DRAFT`: 초안
-  - `ORDERED`: 발주 완료
-  - `SHIPPED`: 선적 완료
-  - `ARRIVED`: 입항 완료
-  - `CLEARED`: 통관 완료
-  - `RECEIVED`: 입고 완료
+  - `DRAFT`: Draft
+  - `ORDERED`: Ordered
+  - `SHIPPED`: Shipped
+  - `ARRIVED`: Arrived
+  - `CLEARED`: Cleared
+  - `RECEIVED`: Received

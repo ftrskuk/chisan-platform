@@ -1,69 +1,71 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const ALLOWED_DOMAIN = "chisanpaper.com";
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+  const next = searchParams.get("next");
 
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string; next?: string }>;
-}) {
   const handleLogin = async () => {
     const supabase = createClient();
-    const params = await searchParams;
 
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         queryParams: {
-          hd: ALLOWED_DOMAIN,
           prompt: "select_account",
         },
-        redirectTo: `${window.location.origin}/auth/callback?next=${params.next ?? "/"}`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${next ?? "/dashboard"}`,
       },
     });
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-lg">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">CHISAN Platform</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            지산페이퍼 통합 비즈니스 플랫폼
-          </p>
-        </div>
-
-        <LoginError searchParams={searchParams} />
-
-        <button
-          onClick={handleLogin}
-          className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
-        >
-          <GoogleIcon />
-          Google 계정으로 로그인
-        </button>
-
-        <p className="text-center text-xs text-gray-500">
-          @{ALLOWED_DOMAIN} 도메인 계정만 로그인 가능합니다
+    <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-lg">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-gray-900">CHISAN Platform</h1>
+        <p className="mt-2 text-sm text-gray-600">
+          지산페이퍼 통합 비즈니스 플랫폼
         </p>
       </div>
+
+      {error && (
+        <div className="rounded-md bg-red-50 p-4">
+          <p className="text-sm text-red-700">{decodeURIComponent(error)}</p>
+        </div>
+      )}
+
+      <button
+        onClick={handleLogin}
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+      >
+        <GoogleIcon />
+        Google 계정으로 로그인
+      </button>
+
+      <p className="text-center text-xs text-gray-500">
+        Google 계정으로 로그인하세요
+      </p>
     </div>
   );
 }
 
-async function LoginError({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const params = await searchParams;
-  if (!params.error) return null;
-
+export default function LoginPage() {
   return (
-    <div className="rounded-md bg-red-50 p-4">
-      <p className="text-sm text-red-700">{decodeURIComponent(params.error)}</p>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
+      <Suspense
+        fallback={
+          <div className="w-full max-w-md animate-pulse space-y-8 rounded-lg bg-white p-8 shadow-lg">
+            <div className="h-8 bg-gray-200 rounded mx-auto w-48" />
+            <div className="h-12 bg-gray-200 rounded" />
+          </div>
+        }
+      >
+        <LoginForm />
+      </Suspense>
     </div>
   );
 }

@@ -1,10 +1,10 @@
-# 아키텍처 개요 (Architecture Overview)
+# Architecture Overview
 
-CHISAN Platform은 지산페이퍼의 비즈니스 복잡성을 수용하고 향후 확장성을 보장하기 위해 설계된 현대적인 하이브리드 아키텍처를 채택합니다.
+CHISAN Platform adopts a modern hybrid architecture designed to accommodate the business complexity of CHISAN Paper and ensure future scalability.
 
-## 1. 하이레벨 시스템 다이어그램 (High-level System Diagram)
+## 1. High-level System Diagram
 
-시스템의 전체적인 구성과 구성 요소 간의 관계를 나타냅니다.
+Shows the overall composition of the system and the relationships between components.
 
 ```mermaid
 graph TB
@@ -28,75 +28,77 @@ graph TB
     Web <--> |Public Assets| R2
 ```
 
-## 2. 하이브리드 아키텍처 설명 (Hybrid Architecture)
+## 2. Hybrid Architecture Description
 
-CHISAN Platform은 **"Hybrid Architecture"** 전략을 사용합니다. 이는 다음 두 가지 접근 방식을 결합한 것을 의미합니다.
+CHISAN Platform uses a **"Hybrid Architecture"** strategy. This implies combining the following two approaches:
 
-1.  **BFF (Backend For Frontend) Pattern**: Next.js App Router를 사용하여 서버 사이드 렌더링(SSR)과 데이터 페칭을 최적화합니다. 복잡한 UI 로직과 초기 진입 속도를 관리합니다.
-2.  **Robust Core Backend**: 비즈니스 로직의 중심(NestJS)을 별도로 두어 데이터 무결성, 복잡한 트랜잭션, 외부 시스템 연동을 처리합니다.
-3.  **Direct Database Access (Edge Cases)**: 간단한 읽기 작업이나 실시간 업데이트가 필요한 경우 Supabase SDK를 통해 클라이언트에서 직접 데이터베이스(RLS 적용)에 접근하여 개발 속도를 높입니다.
+1.  **BFF (Backend For Frontend) Pattern**: Uses Next.js App Router to optimize Server-Side Rendering (SSR) and data fetching. Manages complex UI logic and initial entry speed.
+2.  **Robust Core Backend**: Maintains a separate center of business logic (NestJS) to handle data integrity, complex transactions, and external system integrations.
+3.  **Direct Database Access (Edge Cases)**: For simple read operations or when real-time updates are needed, accessing the database directly from the client via Supabase SDK (with RLS applied) increases development speed.
 
-## 3. 통신 패턴 (Communication Patterns)
+## 3. Communication Patterns
 
--   **REST API**: Backend(NestJS)와 Frontend(Next.js) 간의 주요 통신 방식으로 사용됩니다. OpenAPI(Swagger)를 통해 명세화됩니다.
--   **Shared Schemas**: `packages/shared` 모듈에 정의된 Zod 스키마를 통해 API 요청/응답의 타입을 컴파일 타임과 런타임 모두에서 보장합니다.
--   **Realtime**: 재고 상태 변화나 작업 지시 알림 등을 위해 Supabase Realtime(WebSockets)을 활용합니다.
+- **REST API**: Used as the main communication method between Backend (NestJS) and Frontend (Next.js). Specification is done via OpenAPI (Swagger).
+- **Shared Schemas**: Zod schemas defined in `packages/shared` module guarantee the types of API requests/responses at both compile time and runtime.
+- **Realtime**: Utilizes Supabase Realtime (WebSockets) for inventory status changes or work order notifications.
 
-## 4. 데이터 흐름 개요 (Data Flow Overview)
+## 4. Data Flow Overview
 
-### 4.1 읽기 흐름 (Read Flow)
-1.  사용자가 웹 페이지 접근.
-2.  Next.js Server Component가 필요에 따라 Backend API 호출 또는 Supabase 직접 조회.
-3.  데이터를 가공하여 HTML로 렌더링 후 클라이언트에 전달.
-4.  클라이언트 사이드에서 추가적인 인터랙션 발생 시 클라이언트 SDK로 데이터 페칭.
+### 4.1 Read Flow
 
-### 4.2 쓰기 흐름 (Write Flow)
-1.  사용자가 폼 제출.
-2.  Next.js Client Component가 Backend API로 요청 전달.
-3.  Backend(NestJS)는 `shared` 스키마로 유효성 검사 수행.
-4.  복잡한 비즈니스 로직(예: 재고 차감, 이력 생성) 처리 후 데이터베이스 반영.
-5.  성공 응답 반환 및 UI 업데이트.
+1.  User accesses web page.
+2.  Next.js Server Component calls Backend API or queries Supabase directly as needed.
+3.  Process data, render to HTML, and deliver to client.
+4.  Fetch data with client SDK when additional interaction occurs on client side.
 
-## 5. 보안 아키텍처 (Security Architecture)
+### 4.2 Write Flow
 
--   **인증 (Authentication)**: Supabase Auth를 사용하여 OAuth2 및 이메일/비밀번호 인증을 처리합니다. JWT 기반의 세션 관리를 수행합니다.
--   **인가 (Authorization)**:
-    -   **Backend**: NestJS의 Guard를 사용하여 JWT 유효성을 검사하고 역할 기반 접근 제어(RBAC)를 수행합니다.
-    -   **Database**: Supabase의 Row Level Security(RLS)를 적용하여 잘못된 데이터 접근을 물리적으로 차단합니다.
--   **인프라 보안**: API Key 및 시크릿은 환경 변수로 관리하며, Cloudflare를 통해 DDoS 방어 및 SSL/TLS 암호화를 적용합니다.
+1.  User submits form.
+2.  Next.js Client Component forwards request to Backend API.
+3.  Backend (NestJS) performs validation with `shared` schema.
+4.  Process complex business logic (e.g., inventory deduction, history creation) and reflect in database.
+5.  Return success response and update UI.
 
-## 6. 배포 아키텍처 (Deployment Architecture)
+## 5. Security Architecture
 
-시스템은 모노레포 구조로 관리되며, 다음과 같이 배포됩니다.
+- **Authentication**: Handles OAuth2 and email/password authentication using Supabase Auth. Performs JWT-based session management.
+- **Authorization**:
+  - **Backend**: Uses NestJS Guard to validate JWT and perform Role-Based Access Control (RBAC).
+  - **Database**: Applies Supabase's Row Level Security (RLS) to physically block invalid data access.
+- **Infrastructure Security**: API Keys and secrets are managed as environment variables, and DDoS protection and SSL/TLS encryption are applied via Cloudflare.
 
--   **Monorepo**: Turbo (Turborepo)를 사용하여 빌드 파이프라인 최적화 및 원격 캐싱을 통한 CI/CD 속도 향상.
--   **Frontend**: Vercel 또는 유사한 Edge Platform에 배포하여 글로벌 성능 최적화 및 자동 프리뷰 기능 활용.
--   **Backend**: Docker Container로 패키징되어 클라우드 서비스(AWS ECS, GCP Cloud Run 등)에 배포되어 오토스케일링 지원.
--   **Database/Storage**: Supabase Managed Service 및 Cloudflare R2 사용으로 인프라 관리 부담 최소화.
+## 6. Deployment Architecture
 
-## 7. Cloudflare R2 활용 전략 (Object Storage)
+The system is managed as a monorepo structure and deployed as follows:
 
-CHISAN Platform은 비정형 데이터(이미지, PDF, 바코드 파일 등)를 저장하기 위해 Cloudflare R2를 사용합니다.
+- **Monorepo**: Uses Turbo (Turborepo) for build pipeline optimization and CI/CD speed improvement through remote caching.
+- **Frontend**: Deployed to Vercel or similar Edge Platform for global performance optimization and utilization of automatic preview features.
+- **Backend**: Packaged as Docker Container and deployed to cloud services (AWS ECS, GCP Cloud Run, etc.) to support auto-scaling.
+- **Database/Storage**: Minimizes infrastructure management burden by using Supabase Managed Service and Cloudflare R2.
 
--   **Egress Fee Zero**: 데이터 다운로드 시 발생하는 전송 비용이 없어 운영 비용을 획기적으로 절감합니다.
--   **S3 Compatibility**: 표준 S3 API를 지원하여 기존 라이브러리 및 도구를 그대로 활용 가능합니다.
--   **Signed URLs**: 보안이 필요한 문서(TDS 등)는 기간 한정 서명된 URL을 통해 안전하게 공유합니다.
+## 7. Cloudflare R2 Utilization Strategy (Object Storage)
 
-## 8. 모노레포 도입의 이점 (Monorepo Benefits)
+CHISAN Platform uses Cloudflare R2 to store unstructured data (images, PDFs, barcode files, etc.).
 
-1.  **Code Sharing**: `packages/shared`를 통해 백엔드와 프런트엔드 간의 타입을 100% 공유하여 타입 불일치로 인한 런타임 에러를 방지합니다.
-2.  **Unified Workflow**: 모든 프로젝트의 빌드, 테스트, 린트 설정을 중앙에서 관리하여 개발 생산성을 높입니다.
-3.  **Atomic Commits**: 여러 앱이나 패키지에 걸친 변경 사항을 하나의 커밋으로 관리하여 의존성 관리를 단순화합니다.
+- **Egress Fee Zero**: Drastically reduces operating costs as there are no transfer costs when downloading data.
+- **S3 Compatibility**: Supports standard S3 API, allowing existing libraries and tools to be used as is.
+- **Signed URLs**: Securely shares documents requiring security (TDS, etc.) through time-limited signed URLs.
 
-## 9. 향후 확장 계획 (Future Scalability)
+## 8. Monorepo Benefits
 
--   **tRPC 도입**: 더욱 강력한 타입 안전성을 위해 REST API 외에 tRPC 도입을 고려하고 있습니다.
--   **Microservices**: 비즈니스가 거대해질 경우 특정 모듈(예: 정교한 생산 알고리즘)을 별도의 마이크로서비스로 분리할 수 있는 구조를 유지합니다.
--   **Edge Computing**: 지연 시간에 민감한 작업은 Cloudflare Workers를 통해 엣지에서 처리하도록 확장 가능합니다.
+1.  **Code Sharing**: Prevents runtime errors due to type mismatches by 100% sharing types between backend and frontend via `packages/shared`.
+2.  **Unified Workflow**: Increases development productivity by centrally managing build, test, and lint settings for all projects.
+3.  **Atomic Commits**: Simplifies dependency management by managing changes across multiple apps or packages in a single commit.
+
+## 9. Future Scalability
+
+- **tRPC Introduction**: We are considering introducing tRPC in addition to REST API for stronger type safety.
+- **Microservices**: Maintains a structure where specific modules (e.g., sophisticated production algorithms) can be separated into separate microservices if the business becomes huge.
+- **Edge Computing**: Latency-sensitive tasks can be expanded to be processed at the edge via Cloudflare Workers.
 
 ---
 
-## 10. 모노레포 구조 (Monorepo Structure)
+## 10. Monorepo Structure
 
 ```text
 chisan-platform/

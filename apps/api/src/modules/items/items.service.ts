@@ -120,7 +120,7 @@ export class ItemsService {
       .order("sort_order");
 
     if (error) throw new BadRequestException(error.message);
-    return (data as DbPaperType[]).map(this.mapPaperType);
+    return (data as DbPaperType[]).map((db) => this.mapPaperType(db));
   }
 
   async createPaperType(input: CreatePaperTypeInput): Promise<PaperType> {
@@ -203,7 +203,7 @@ export class ItemsService {
     const { data, error } = await query.order("display_name");
 
     if (error) throw new BadRequestException(error.message);
-    return (data as DbItem[]).map(this.mapItem);
+    return (data as DbItem[]).map((db) => this.mapItem(db));
   }
 
   async findOne(id: string): Promise<ItemWithRelations> {

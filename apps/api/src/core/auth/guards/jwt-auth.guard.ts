@@ -30,11 +30,15 @@ export class JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException("Invalid or expired token");
       }
 
-      const { data: userRoles } = await this.supabaseService
+      const { data: userRoles, error: rolesError } = await this.supabaseService
         .getServiceClient()
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id);
+
+      if (rolesError) {
+        throw new UnauthorizedException("Failed to resolve user permissions");
+      }
 
       const requestUser: RequestUser = {
         id: user.id,
@@ -52,13 +56,15 @@ export class JwtAuthGuard implements CanActivate {
     }
   }
 
-  private extractTokenFromHeader(request: Request & { headers: { authorization?: string } }): string | null {
+  private extractTokenFromHeader(
+    request: Request & { headers: { authorization?: string } },
+  ): string | null {
     const authorization = request.headers.authorization;
     if (!authorization) {
       return null;
     }
 
     const [type, token] = authorization.split(" ");
-    return type === "Bearer" ? token ?? null : null;
+    return type === "Bearer" ? (token ?? null) : null;
   }
 }

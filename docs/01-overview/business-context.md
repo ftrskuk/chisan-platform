@@ -1,114 +1,120 @@
-# 비즈니스 컨텍스트 (Business Context)
+# Business Context
 
-지산페이퍼(CHISAN Paper) 플랫폼의 비즈니스 배경과 목적, 도메인 용어 및 주요 워크플로우를 설명하는 문서입니다.
+This document explains the business background, purpose, domain terms, and key workflows of the CHISAN Paper platform.
 
-## 1. 기업 개요 (Company Overview)
+## 1. Company Overview
 
-**지산페이퍼(CHISAN Paper)**는 지류(Paper) 수입, 보관, 슬리팅(Slitting) 가공 및 유통을 전문으로 하는 중소기업입니다. 경기도 광주에 본사 및 주요 창고를 운영하고 있으며, 국내 인쇄소, 패키지 제조사, 특수 지류 가공업체 등에 고품질의 종이를 공급하고 있습니다.
+**CHISAN Paper** is an SME specializing in paper import, storage, slitting processing, and distribution. Headquartered in Gwangju, Gyeonggi-do, it operates major warehouses and supplies high-quality paper to domestic printing houses, package manufacturers, and special paper processors.
 
-주요 취급 품목은 다음과 같습니다.
-*   **롤지 (Roll Paper)**: 매출의 약 80%를 차지하는 핵심 품목입니다. 해외 유수의 제지사(핀란드, 스웨덴, 미국 등)로부터 대량의 Parent Roll을 수입하여 보관하거나 고객이 원하는 규격으로 슬리팅 가공하여 공급합니다.
-*   **평판지 (Sheet Paper)**: 매출의 약 20%를 차지합니다. 규격화된 사이즈로 재단된 종이로, 주로 상업 인쇄물 제작에 사용됩니다.
+Key items handled are as follows:
 
-현재 6명의 소수 정예 내부 인력(경영, 수입/영업, 창고 관리, 생산 담당)으로 운영되고 있으나, 사업의 가파른 성장세에 힘입어 향후 2년 내 20명 이상의 규모로 조직을 확장을 계획하고 있습니다. 이러한 성장을 뒷받침하기 위해 기존의 파편화된 업무 프로세스를 통합하고 데이터의 정합성을 확보할 수 있는 전사적 플랫폼 구축이 시급한 상황입니다.
+- **Roll Paper**: A core item accounting for about 80% of sales. We import large quantities of Parent Rolls from leading overseas paper manufacturers (Finland, Sweden, USA, etc.) and store them or supply them after slitting processing to the specifications desired by the customer.
+- **Sheet Paper**: Accounts for about 20% of sales. Paper cut to standardized sizes, mainly used for commercial printing production.
 
-## 2. 비즈니스 도메인 상세 설명 (Business Domain Details)
+Currently, it is operated by a small elite internal staff of 6 (management, import/sales, warehouse management, production), but thanks to the rapid growth of the business, we plan to expand the organization to more than 20 people within the next 2 years. To support this growth, it is urgent to build a company-wide platform that can integrate existing fragmented work processes and ensure data integrity.
 
-지산페이퍼의 비즈니스는 크게 네 가지 핵심 도메인으로 나뉩니다.
+## 2. Business Domain Details
 
-### 2.1 수입 및 발주 (Import & Procurement)
-지산페이퍼는 원자재의 대부분을 해외에서 조달합니다. 해외 제지사와의 직접 계약을 통해 발주를 진행하며, 이 과정에서 해상 운송 기간(Lead Time), 관세, 부가세, 물류비용 등 복잡한 수입 원가 계산이 수반됩니다. 시스템은 발주 시점부터 선적, 입항, 통관에 이르는 전 과정을 추적해야 합니다.
+CHISAN Paper's business is divided into four key domains.
 
-### 2.2 창고 및 재고 관리 (Inventory & Warehouse)
-창고에 입고된 종이는 각각 고유한 ID(Batch No 또는 Roll ID)를 부여받아 관리됩니다. 종이는 온도와 습도에 민감한 제품이므로 적절한 위치(Location) 관리가 필수적이며, 선입선출(FIFO) 원칙에 따른 재고 회전이 중요합니다. 또한, 실시간 재고 파악을 통해 영업팀이 즉각적으로 납기를 확답할 수 있는 환경을 제공해야 합니다.
+### 2.1 Import & Procurement
 
-### 2.3 슬리팅 가공 (Production & Slitting)
-지산페이퍼의 가장 큰 경쟁력은 자체 슬리팅 설비를 통한 맞춤형 가공입니다. 1,000mm 폭의 원지를 250mm 4개로 나누거나, 400mm 2개와 200mm 1개로 나누는 등 고객의 요구에 따라 다양하게 가공합니다. 이 과정에서 발생하는 'Loss(손실)'와 'Remnant(잔여 롤)'를 정확히 측정하고 시스템에 반영하는 것이 비즈니스의 핵심입니다.
+CHISAN Paper procures most of its raw materials from overseas. Orders are placed through direct contracts with overseas paper manufacturers, and this process involves complex import cost calculations such as marine transportation lead time, tariffs, VAT, and logistics costs. The system must track the entire process from order placement to shipment, arrival, and customs clearance.
 
-### 2.4 유통 및 판매 (Distribution & Sales)
-가공이 완료된 제품은 최종 고객사에게 배송됩니다. 다수의 거래처별로 다른 단가 정책, 결제 조건, 배송처 정보를 관리해야 하며, 출고 시 차량 배차 정보와 운송장 정보를 함께 기록하여 배송 추적성을 확보합니다.
+### 2.2 Inventory & Warehouse
+
+Paper stocked in the warehouse is managed by being assigned a unique ID (Batch No or Roll ID). Since paper is sensitive to temperature and humidity, proper location management is essential, and inventory turnover according to the First-In-First-Out (FIFO) principle is important. In addition, an environment must be provided where the sales team can immediately confirm delivery dates through real-time inventory identification.
+
+### 2.3 Production & Slitting
+
+CHISAN Paper's biggest competitiveness is custom processing through its own slitting facilities. We process variously according to customer needs, such as dividing a 1,000mm wide parent roll into four 250mm rolls, or two 400mm rolls and one 200mm roll. Accurately measuring 'Loss' and 'Remnant' occurring in this process and reflecting them in the system is the core of the business.
+
+### 2.4 Distribution & Sales
+
+Processed products are delivered to final customers. Different unit price policies, payment terms, and delivery address information must be managed for multiple partners, and vehicle allocation information and waybill information must be recorded together at the time of shipment to ensure delivery traceability.
 
 ```mermaid
 graph TD
-    subgraph "수입 단계"
-        A[해외 제지사 발주] --> B[선적 및 해상운송]
-        B --> C[통관 및 국내 운송]
+    subgraph "Import Phase"
+        A[Order to Overseas Paper Mill] --> B[Shipment & Marine Transport]
+        B --> C[Customs & Inland Transport]
     end
-    subgraph "창고 단계"
-        C --> D[창고 입고 처리]
-        D --> E{재고 상태 관리}
-        E --> F[창고 보관]
+    subgraph "Warehouse Phase"
+        C --> D[Warehouse Stock-In]
+        D --> E{Inventory Status Management}
+        E --> F[Warehouse Storage]
     end
-    subgraph "가공 단계"
-        F --> G[슬리팅 작업 지시]
-        G --> H[원지 투입/가공]
-        H --> I[완제품/잔여물 입고]
+    subgraph "Processing Phase"
+        F --> G[Slitting Work Order]
+        G --> H[Parent Roll Input/Processing]
+        H --> I[Finished Goods/Remnant Stock-In]
     end
-    subgraph "판매 단계"
-        I --> J[주문 접수]
+    subgraph "Sales Phase"
+        I --> J[Order Reception]
         F --> J
-        J --> K[출고 및 배송]
-        K --> L[거래 완료]
+        J --> K[Stock-Out & Delivery]
+        K --> L[Transaction Complete]
     end
 ```
 
-## 3. 주요 페인 포인트 (Current Pain Points)
+## 3. Current Pain Points
 
-현재 시스템 부재로 인해 발생하는 구체적인 문제점들은 다음과 같습니다.
+Specific problems caused by the absence of the current system are as follows.
 
-*   **재고 가시성 부족 (Lack of Inventory Visibility)**: 물리적 재고와 엑셀 장부의 일치율이 85% 수준에 머물러 있습니다. 이는 특히 슬리팅 가공 후 발생하는 잔여물(Remnant)이 즉각적으로 시스템에 반영되지 않아 발생하는 문제입니다.
-*   **공정 추적성 결여 (Missing Traceability)**: 특정 제품에서 품질 문제가 발생했을 때, 이것이 어느 시점에 수입된 어떤 Parent Roll에서 파생되었는지 추적하는 데 며칠의 시간이 소요됩니다.
-*   **복잡한 수입 원가 계산 (Manual Landing Cost Calculation)**: 해상 운임, 보험료, 관세 등을 포함한 최종 도착가(Landing Cost) 계산을 엑셀로 매번 수동 수행하므로 정확한 이익률 분석이 어렵습니다.
-*   **커뮤니케이션 지연 (Communication Bottlenecks)**: 영업팀이 재고를 확인하기 위해 매번 창고 담당자에게 전화를 걸거나 직접 확인해야 하는 비효율이 발생합니다.
-*   **인적 종속성 (Human Dependency)**: 특정 담당자만이 알고 있는 암묵지(제품 위치, 특수 가공 조건 등)가 많아 담당자 부재 시 업무가 마비되는 리스크가 있습니다.
+- **Lack of Inventory Visibility**: The match rate between physical inventory and Excel ledgers remains at around 85%. This is a problem that arises especially because Remnants generated after slitting processing are not immediately reflected in the system.
+- **Missing Traceability**: When a quality problem occurs in a specific product, it takes days to trace which Parent Roll imported at what time it was derived from.
+- **Manual Landing Cost Calculation**: Since the calculation of the final Landing Cost including ocean freight, insurance, and tariffs is performed manually in Excel every time, accurate profit margin analysis is difficult.
+- **Communication Bottlenecks**: Inefficiencies occur where the sales team has to call the warehouse manager or check directly every time to check inventory.
+- **Human Dependency**: There are many tacit knowledges (product location, special processing conditions, etc.) known only to specific managers, so there is a risk that work will be paralyzed in the absence of the manager.
 
-## 4. 대상 사용자 및 역할 (Target Users & Roles)
+## 4. Target Users & Roles
 
-시스템의 사용자는 권한에 따라 다음과 같이 구분됩니다.
+System users are classified as follows according to their authority.
 
-| 역할 | 상세 설명 | 주요 책임 범위 |
-| :--- | :--- | :--- |
-| **시스템 관리자** | 플랫폼 전체 환경 설정 및 보안 관리 | 사용자 계정 관리, 시스템 로그 확인, 마스터 데이터 승인 |
-| **구매/수입 담당** | 해외 소싱 및 수입 물류 관리 | 발주서 작성, 선적 스케줄 관리, 수입 비용 정산 |
-| **영업 담당** | 고객 응대 및 수주 관리 | 견적서 발행, 주문 접수, 고객사 단가 관리, 납기 모니터링 |
-| **창고 운영 담당** | 실물 재고의 입출고 및 보관 관리 | 바코드 스캔, 입출고 전표 작성, 위치 이동, 재고 실사 |
-| **생산 지시/관리** | 슬리팅 설비 가공 계획 및 결과 관리 | 작업 지시서 생성, 투입량 대비 산출량 분석, 손실률 관리 |
-| **경영진** | 전사 지표 확인 및 전략 수립 | 재고 회전율 분석, 매출/이익 통계, 사업 확장성 검토 |
+| Role                        | Description                                                | Key Responsibilities                                                                     |
+| :-------------------------- | :--------------------------------------------------------- | :--------------------------------------------------------------------------------------- |
+| **System Admin**            | Platform environment configuration and security management | User account management, system log check, master data approval                          |
+| **Purchase/Import Manager** | Overseas sourcing and import logistics management          | PO creation, shipment schedule management, import cost settlement                        |
+| **Sales Manager**           | Customer response and order management                     | Quotation issuance, order reception, customer unit price management, delivery monitoring |
+| **Warehouse Manager**       | Stock-in/out of physical inventory and storage management  | Barcode scan, stock-in/out slip creation, location movement, physical inventory          |
+| **Production Manager**      | Slitting facility processing plan and result management    | Work order creation, input vs output analysis, loss rate management                      |
+| **Executive**               | Company-wide indicator check and strategy establishment    | Inventory turnover analysis, sales/profit statistics, business scalability review        |
 
-## 5. 도메인 용어 사전 (Domain Glossary)
+## 5. Domain Glossary
 
-비즈니스 이해를 돕기 위한 전문 용어 설명입니다.
+Explanation of technical terms to help understand the business.
 
-| 용어 (Korean) | 용어 (English) | 상세 설명 |
-| :--- | :--- | :--- |
-| **원지** | Parent Roll | 제지 공장에서 생산되어 수입된 거대 롤입니다. 모든 가공의 시작점입니다. |
-| **슬리팅** | Slitting | 회전하는 칼날을 이용해 넓은 폭의 원지를 좁은 폭의 롤로 자르는 공정입니다. |
-| **입고** | Stock-In | 외부 구매, 가공 결과물 또는 반품 등으로 인해 재고가 창고로 들어오는 행위입니다. |
-| **출고** | Stock-Out | 판매, 가공 투입 또는 폐기 등을 위해 재고가 창고에서 나가는 행위입니다. |
-| **발주** | Purchase Order | 공급업체에게 특정 품목과 수량을 주문하고 확약받는 문서화된 행위입니다. |
-| **거래처** | Partner | 지산페이퍼와 상거래 관계에 있는 모든 공급업체(Supplier)와 고객사(Customer)입니다. |
-| **평량** | Grammage | 종이의 기본 사양으로, 1제곱미터당 무게(g/㎡)를 의미합니다. 종이의 두께와 강도를 결정합니다. |
-| **지폭** | Width | 롤 종이의 가로 너비(mm)입니다. 슬리팅의 기준이 되는 치수입니다. |
-| **지름** | Diameter | 롤 제품의 외경(mm)입니다. 운송 및 설비 장착 시 중요한 제약 조건입니다. |
-| **잔여물** | Remnant | 슬리팅 작업 후 남았지만 버리지 않고 재사용 가능한 수준의 롤입니다. |
-| **지함** | Core | 종이가 감겨 있는 중심부의 종이 관입니다. 내경(Inner Diameter) 관리가 필요합니다. |
-| **권취** | Winding | 종이를 롤 형태로 감는 행위 또는 그 상태를 의미합니다. |
+| Term (Korean) | Term (English) | Description                                                                                                       |
+| :------------ | :------------- | :---------------------------------------------------------------------------------------------------------------- |
+| **원지**      | Parent Roll    | Huge rolls produced and imported from paper mills. The starting point of all processing.                          |
+| **슬리팅**    | Slitting       | A process of cutting wide parent rolls into narrow rolls using rotating blades.                                   |
+| **입고**      | Stock-In       | The act of inventory coming into the warehouse due to external purchase, processing results, or returns.          |
+| **출고**      | Stock-Out      | The act of inventory leaving the warehouse for sales, processing input, or disposal.                              |
+| **발주**      | Purchase Order | A documented act of ordering and confirming specific items and quantities from a supplier.                        |
+| **거래처**    | Partner        | All Suppliers and Customers in a business relationship with CHISAN Paper.                                         |
+| **평량**      | Grammage       | Basic specification of paper, meaning weight per square meter (g/㎡). Determines thickness and strength of paper. |
+| **지폭**      | Width          | Horizontal width (mm) of roll paper. The standard dimension for slitting.                                         |
+| **지름**      | Diameter       | Outer diameter (mm) of roll product. An important constraint during transportation and equipment mounting.        |
+| **잔여물**    | Remnant        | Rolls that remain after slitting work but are reusable.                                                           |
+| **지함**      | Core           | Paper tube in the center where paper is wound. Inner Diameter management is required.                             |
+| **권취**      | Winding        | The act of winding paper into a roll shape or its state.                                                          |
 
-## 6. 주요 워크플로우 상세 (Detailed Business Workflows)
+## 6. Detailed Business Workflows
 
-### 6.1 수입 및 입고 프로세스
-1.  **발주 결정**: 영업 수요와 현재 재고 수준을 분석하여 수입 품목 및 수량을 결정합니다.
-2.  **PO 발행**: 시스템에서 Purchase Order를 생성하여 해외 제조사에 전달합니다.
-3.  **선적 정보 업데이트**: 제조사로부터 받은 선적 서류(B/L, Invoice, Packing List) 정보를 시스템에 입력합니다.
-4.  **창고 도착 및 검수**: 제품이 창고에 도착하면 실제 수량과 외관 상태를 확인합니다.
-5.  **바코드 발행 및 부착**: 각 롤 단위로 고유 식별 바코드를 출력하여 부착합니다.
-6.  **위치 지정 입고**: 지정된 랙(Rack) 위치에 제품을 적재하고 바코드를 스캔하여 입고 처리를 완료합니다.
+### 6.1 Import and Stock-In Process
 
-### 6.2 슬리팅 가공 및 제품화 프로세스
-1.  **가공 요청**: 고객사 주문 사양에 맞춰 슬리팅 작업 지시서를 생성합니다.
-2.  **원지 선정**: 시스템에서 가용한 Parent Roll 중 유효기간이나 상태가 적절한 것을 선택(예약)합니다.
-3.  **현장 투입**: 선택된 원지를 창고에서 불출(Stock-Out)하여 생산 라인으로 이동시킵니다.
-4.  **가공 수행**: 작업자는 지시서에 명시된 지폭에 맞춰 칼날을 세팅하고 슬리팅을 진행합니다.
-5.  **실적 기록**: 가공 완료 후 생산된 완제품 롤들의 개수, 총 중량, 잔여물 정보를 시스템에 입력합니다.
-6.  **이력 자동 생성**: 시스템은 투입된 원지와 생산된 제품 간의 계보(Lineage)를 자동으로 생성합니다.
+1.  **Order Decision**: Analyze sales demand and current inventory levels to decide import items and quantities.
+2.  **PO Issuance**: Create Purchase Order in the system and deliver it to the overseas manufacturer.
+3.  **Shipment Information Update**: Enter shipping document (B/L, Invoice, Packing List) information received from the manufacturer into the system.
+4.  **Warehouse Arrival and Inspection**: Check actual quantity and appearance condition when products arrive at the warehouse.
+5.  **Barcode Issuance and Attachment**: Print and attach unique identification barcodes for each roll unit.
+6.  **Location Designated Stock-In**: Load products in designated Rack locations and complete stock-in processing by scanning barcodes.
 
+### 6.2 Slitting Processing and Productization Process
+
+1.  **Processing Request**: Create slitting work order according to customer order specifications.
+2.  **Parent Roll Selection**: Select (reserve) Parent Rolls with appropriate expiration dates or status among available ones in the system.
+3.  **Field Input**: Stock-Out selected Parent Rolls from the warehouse and move them to the production line.
+4.  **Processing Execution**: Operator sets blades according to width specified in work order and proceeds with slitting.
+5.  **Performance Recording**: Enter number of finished rolls produced, total weight, and remnant information into the system after processing is completed.
+6.  **History Auto-Generation**: System automatically generates lineage between input Parent Rolls and produced products.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,6 +20,8 @@ export default function PartnersPage() {
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Partner | null>(null);
 
+  const router = useRouter();
+
   const { data: partners, isLoading } = usePartners();
   const deleteMutation = useDeletePartner();
 
@@ -28,7 +31,7 @@ export default function PartnersPage() {
   };
 
   const handleManageBrands = (partner: Partner) => {
-    toast.info(`${partner.name}의 브랜드 관리 기능은 준비 중입니다.`);
+    router.push(`/master/partners/${partner.id}/brands`);
   };
 
   const handleDelete = async () => {

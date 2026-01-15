@@ -89,7 +89,7 @@ export class WarehousesService {
       .order("name");
 
     if (error) throw new BadRequestException(error.message);
-    return (data as DbWarehouse[]).map(this.mapWarehouse);
+    return (data as DbWarehouse[]).map((db) => this.mapWarehouse(db));
   }
 
   async findOne(id: string): Promise<WarehouseWithLocations> {
@@ -114,7 +114,9 @@ export class WarehousesService {
 
     return {
       ...this.mapWarehouse(warehouse as DbWarehouse),
-      locations: ((locations as DbLocation[]) ?? []).map(this.mapLocation),
+      locations: ((locations as DbLocation[]) ?? []).map((db) =>
+        this.mapLocation(db),
+      ),
     };
   }
 
@@ -212,7 +214,7 @@ export class WarehousesService {
       .order("code");
 
     if (error) throw new BadRequestException(error.message);
-    return ((data as DbLocation[]) ?? []).map(this.mapLocation);
+    return ((data as DbLocation[]) ?? []).map((db) => this.mapLocation(db));
   }
 
   async createLocation(
