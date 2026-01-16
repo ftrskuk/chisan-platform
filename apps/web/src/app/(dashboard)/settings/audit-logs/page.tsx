@@ -18,11 +18,18 @@ const CATEGORY_OPTIONS: { label: string; value: AuditCategory }[] = [
   { label: "설정", value: "settings" },
 ];
 
+const DEFAULT_PAGE_SIZE = 100;
+
 export default function AuditLogsPage() {
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [pagination, setPagination] = useState({
+    limit: DEFAULT_PAGE_SIZE,
+    offset: 0,
+  });
 
-  const { data: response, isLoading } = useAuditLogs({ limit: 100 });
+  const { data: response, isLoading } = useAuditLogs(pagination);
   const logs = response?.data ?? [];
+  const total = response?.total ?? 0;
 
   return (
     <div className="space-y-6">

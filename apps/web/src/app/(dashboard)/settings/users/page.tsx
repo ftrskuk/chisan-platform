@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 
 import { useUsers, useToggleUserActive, useRemoveRole } from "@/hooks/api";
@@ -18,20 +18,29 @@ export default function UsersPage() {
   const [toggleConfirm, setToggleConfirm] = useState<UserWithRoles | null>(
     null,
   );
+  const [removeRoleConfirm, setRemoveRoleConfirm] = useState<{
+    user: UserWithRoles;
+    role: UserRole;
+  } | null>(null);
 
   const { data: users, isLoading } = useUsers();
   const toggleMutation = useToggleUserActive();
   const removeMutation = useRemoveRole();
 
-  const handleAssignRole = (user: UserWithRoles) => {
+  const handleAssignRole = useCallback((user: UserWithRoles) => {
     setSelectedUser(user);
     setRoleSheetOpen(true);
-  };
+  }, []);
 
-  const handleRemoveRole = async (user: UserWithRoles, role: UserRole) => {
+  const handleConfirmRemoveRole = async () => {
+    if (!removeRoleConfirm) return;
     try {
-      await removeMutation.mutateAsync({ userId: user.id, role });
+      await removeMutation.mutateAsync({
+        userId: removeRoleConfirm.user.id,
+        role: removeRoleConfirm.role,
+      });
       toast.success("역할이 제거되었습니다.");
+      setRemoveRoleConfirm(null);
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -68,11 +77,21 @@ export default function UsersPage() {
     setSelectedUser(null);
   };
 
-  const columns = userColumns({
-    onToggleActive: setToggleConfirm,
-    onAssignRole: handleAssignRole,
-    onRemoveRole: handleRemoveRole,
-  });
+  const handleRemoveRole = useCallback(
+    (user: UserWithRoles, role: UserRole) =>
+      setRemoveRoleConfirm({ user, role }),
+    [],
+  );
+
+  const columns = useMemo(
+    () =>
+      userColumns({
+        onToggleActive: setToggleConfirm,
+        onAssignRole: handleAssignRole,
+        onRemoveRole: handleRemoveRole,
+      }),
+    [handleAssignRole, handleRemoveRole],
+  );
 
   return (
     <div className="space-y-6">
@@ -133,6 +152,17 @@ export default function UsersPage() {
         isLoading={toggleMutation.isPending}
         variant={toggleConfirm?.isActive ? "destructive" : "default"}
         confirmText={toggleConfirm?.isActive ? "비활성화" : "활성화"}
+      />
+
+      <ConfirmDialog
+        open={!!removeRoleConfirm}
+        onOpenChange={(open) => !open && setRemoveRoleConfirm(null)}
+        title="역할 제거"
+        description={`"${removeRoleConfirm?.user.displayName ?? removeRoleConfirm?.user.email}"에서 ${removeRoleConfirm?.role} 역할을 제거하시겠습니까?`}
+        onConfirm={handleConfirmRemoveRole}
+        isLoading={removeMutation.isPending}
+        variant="destructive"
+        confirmText="제거"
       />
     </div>
   );

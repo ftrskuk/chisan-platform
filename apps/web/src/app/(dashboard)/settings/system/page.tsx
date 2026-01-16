@@ -126,9 +126,7 @@ export default function SystemSettingsPage() {
                 {categorySettings.map((setting, index) => {
                   const settingKey = `${setting.category}.${setting.key}`;
                   const currentValue = editValues[settingKey];
-                  const isBoolean =
-                    setting.key === "fifo_enabled" ||
-                    setting.key === "email_enabled";
+                  const isBoolean = typeof setting.value === "boolean";
                   const showSave = hasChanges(setting);
                   const isSaving = updateMutation.isPending;
 
@@ -154,7 +152,7 @@ export default function SystemSettingsPage() {
                       <div className="flex items-center gap-2">
                         {isBoolean ? (
                           <Switch
-                            checked={Boolean(currentValue)}
+                            checked={currentValue === true}
                             onCheckedChange={(checked) =>
                               setEditValues((prev) => ({
                                 ...prev,
@@ -175,12 +173,25 @@ export default function SystemSettingsPage() {
                                 ? "설정되지 않음"
                                 : undefined
                             }
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const newValue = e.target.value;
+                              let parsedValue: string | number | null =
+                                newValue || null;
+                              // Preserve number type if original value was a number
+                              if (
+                                typeof setting.value === "number" &&
+                                newValue !== ""
+                              ) {
+                                const num = Number(newValue);
+                                if (!Number.isNaN(num)) {
+                                  parsedValue = num;
+                                }
+                              }
                               setEditValues((prev) => ({
                                 ...prev,
-                                [settingKey]: e.target.value || null,
-                              }))
-                            }
+                                [settingKey]: parsedValue,
+                              }));
+                            }}
                             className="w-64"
                           />
                         )}
