@@ -102,3 +102,12 @@ export function useDeleteLocation(warehouseId: string) {
     },
   });
 }
+
+export function useLocations(warehouseId: string) {
+  return useQuery({
+    queryKey: [...WAREHOUSES_KEY, warehouseId, "locations"],
+    queryFn: () =>
+      api.get<Location[]>(`/api/v1/warehouses/${warehouseId}/locations`),
+    enabled: !!warehouseId,
+  });
+}

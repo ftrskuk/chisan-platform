@@ -1,9 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type {
   StockWithRelations,
   StockSearchInput,
   StocksResponse,
+  CreateStockInInput,
+  StockInResult,
+  BulkStockInInput,
+  BulkStockInResult,
 } from "@repo/shared";
 
 const STOCKS_KEY = ["stocks"];
@@ -33,5 +37,29 @@ export function useStock(id: string) {
     queryKey: [...STOCKS_KEY, id],
     queryFn: () => api.get<StockWithRelations>(`/api/v1/stocks/${id}`),
     enabled: !!id,
+  });
+}
+
+export function useCreateStockIn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateStockInInput) =>
+      api.post<StockInResult>("/api/v1/stocks/in", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STOCKS_KEY });
+    },
+  });
+}
+
+export function useBulkStockIn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: BulkStockInInput) =>
+      api.post<BulkStockInResult>("/api/v1/stocks/in/bulk", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STOCKS_KEY });
+    },
   });
 }

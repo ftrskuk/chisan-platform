@@ -85,3 +85,57 @@ export interface StocksResponse {
   limit: number;
   offset: number;
 }
+
+export const STOCK_SOURCE_TYPES = [
+  "import",
+  "production",
+  "adjustment",
+] as const;
+export type StockSourceType = (typeof STOCK_SOURCE_TYPES)[number];
+
+export interface CreateStockInInput {
+  itemId: string;
+  locationId: string;
+  widthMm: number;
+  weightKg: number;
+  quantity?: number;
+  condition: StockCondition;
+  sourceType: StockSourceType;
+  lotNumber?: string;
+  notes?: string;
+}
+
+export interface StockInResult {
+  stock: StockWithRelations;
+  movement: StockMovement;
+  batchNumber: string;
+}
+
+export interface BulkStockInInput {
+  items: CreateStockInInput[];
+}
+
+export interface BulkStockInResult {
+  results: StockInResult[];
+  successCount: number;
+  failureCount: number;
+}
+
+// Stock-In Response
+export interface StockInResult {
+  stock: StockWithRelations;
+  movement: StockMovement;
+  batchNumber: string;
+}
+
+// Bulk Stock-In Input
+export interface BulkStockInInput {
+  items: CreateStockInInput[];
+}
+
+// Bulk Stock-In Response
+export interface BulkStockInResult {
+  results: StockInResult[];
+  successCount: number;
+  failureCount: number;
+}

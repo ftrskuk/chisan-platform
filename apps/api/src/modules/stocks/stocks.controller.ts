@@ -1,15 +1,29 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
   ParseUUIDPipe,
+  Post,
   Query,
   UseGuards,
+  UsePipes,
 } from "@nestjs/common";
-import { stockSearchSchema } from "@repo/shared";
-import type { StockSearchInput } from "@repo/shared";
+import {
+  stockSearchSchema,
+  createStockInSchema,
+  bulkStockInSchema,
+} from "@repo/shared";
+import type {
+  StockSearchInput,
+  CreateStockInInput,
+  BulkStockInInput,
+} from "@repo/shared";
 import { JwtAuthGuard } from "../../core/auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../../core/auth/guards/roles.guard";
+import { Roles } from "../../core/auth/decorators/roles.decorator";
+import { CurrentUser } from "../../core/auth/decorators/current-user.decorator";
+import type { RequestUser } from "../../core/auth/types/auth.types";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { StocksService } from "./stocks.service";
 
@@ -28,5 +42,22 @@ export class StocksController {
   @Get(":id")
   findOne(@Param("id", ParseUUIDPipe) id: string) {
     return this.stocksService.findOne(id);
+  }
+
+  @Post("in")
+  @Roles("admin", "manager")
+  @UsePipes(new ZodValidationPipe(createStockInSchema))
+  stockIn(@Body() input: CreateStockInInput, @CurrentUser() user: RequestUser) {
+    return this.stocksService.stockIn(input, user.id);
+  }
+
+  @Post("in/bulk")
+  @Roles("admin", "manager")
+  @UsePipes(new ZodValidationPipe(bulkStockInSchema))
+  bulkStockIn(
+    @Body() input: BulkStockInInput,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.stocksService.bulkStockIn(input, user.id);
   }
 }

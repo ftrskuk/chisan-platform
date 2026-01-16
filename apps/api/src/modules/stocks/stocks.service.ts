@@ -10,6 +10,9 @@ import type {
   StockStatus,
   StockSearchInput,
   StocksResponse,
+  StockMovement,
+  MovementType,
+  MovementReferenceType,
   Item,
   PaperType,
   Brand,
@@ -17,6 +20,10 @@ import type {
   Warehouse,
   ItemForm,
   LocationType,
+  CreateStockInInput,
+  StockInResult,
+  BulkStockInInput,
+  BulkStockInResult,
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
 
@@ -119,6 +126,23 @@ interface DbStockWithRelations extends DbStock {
   locations: DbLocation & {
     warehouses: DbWarehouse;
   };
+}
+
+interface DbStockMovement {
+  id: string;
+  stock_id: string;
+  movement_type: string;
+  quantity_change: number;
+  weight_change_kg: number | null;
+  quantity_before: number;
+  quantity_after: number;
+  weight_before_kg: number | null;
+  weight_after_kg: number | null;
+  reason: string | null;
+  reference_type: string | null;
+  reference_id: string | null;
+  performed_by: string | null;
+  created_at: string;
 }
 
 @Injectable()
@@ -352,5 +376,129 @@ export class StocksService {
     }
 
     return this.mapStockWithRelations(data as DbStockWithRelations);
+  }
+
+  private mapMovement(db: DbStockMovement): StockMovement {
+    return {
+      id: db.id,
+      stockId: db.stock_id,
+      movementType: db.movement_type as MovementType,
+      quantityChange: db.quantity_change,
+      weightChangeKg: db.weight_change_kg ? Number(db.weight_change_kg) : null,
+      quantityBefore: db.quantity_before,
+      quantityAfter: db.quantity_after,
+      weightBeforeKg: db.weight_before_kg ? Number(db.weight_before_kg) : null,
+      weightAfterKg: db.weight_after_kg ? Number(db.weight_after_kg) : null,
+      reason: db.reason,
+      referenceType: db.reference_type as MovementReferenceType | null,
+      referenceId: db.reference_id,
+      performedBy: db.performed_by,
+      createdAt: db.created_at,
+    };
+  }
+
+  private async generateBatchNumber(): Promise<string> {
+    const client = this.supabaseService.getServiceClient();
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const prefix = `SI-${today}-`;
+
+    const { data } = await client
+      .from("stocks")
+      .select("batch_number")
+      .like("batch_number", `${prefix}%`)
+      .order("batch_number", { ascending: false })
+      .limit(1);
+
+    let sequence = 1;
+    if (data && data.length > 0) {
+      const batchNumber = data[0]?.batch_number;
+      if (batchNumber) {
+        const lastSeq = parseInt(batchNumber.slice(-3), 10);
+        sequence = lastSeq + 1;
+      }
+    }
+
+    return `${prefix}${sequence.toString().padStart(3, "0")}`;
+  }
+
+  async stockIn(
+    input: CreateStockInInput,
+    performedBy: string,
+  ): Promise<StockInResult> {
+    const client = this.supabaseService.getServiceClient();
+
+    const batchNumber = await this.generateBatchNumber();
+    const quantity = input.quantity ?? 1;
+
+    const { data: stockData, error: stockError } = await client
+      .from("stocks")
+      .insert({
+        item_id: input.itemId,
+        location_id: input.locationId,
+        width_mm: input.widthMm,
+        weight_kg: input.weightKg,
+        quantity: quantity,
+        condition: input.condition,
+        status: "available",
+        is_active: true,
+        batch_number: batchNumber,
+        lot_number: input.lotNumber ?? null,
+        received_at: new Date().toISOString(),
+        source_type: input.sourceType,
+        notes: input.notes ?? null,
+      })
+      .select()
+      .single();
+
+    if (stockError) throw new BadRequestException(stockError.message);
+
+    const { data: movementData, error: movementError } = await client
+      .from("stock_movements")
+      .insert({
+        stock_id: stockData.id,
+        movement_type: "in",
+        quantity_change: quantity,
+        weight_change_kg: input.weightKg,
+        quantity_before: 0,
+        quantity_after: quantity,
+        weight_before_kg: 0,
+        weight_after_kg: input.weightKg,
+        reason: `Stock-in: ${input.sourceType}`,
+        reference_type: input.sourceType,
+        performed_by: performedBy,
+      })
+      .select()
+      .single();
+
+    if (movementError) throw new BadRequestException(movementError.message);
+
+    const stock = await this.findOne(stockData.id);
+
+    return {
+      stock,
+      movement: this.mapMovement(movementData as DbStockMovement),
+      batchNumber,
+    };
+  }
+
+  async bulkStockIn(
+    input: BulkStockInInput,
+    performedBy: string,
+  ): Promise<BulkStockInResult> {
+    const results: StockInResult[] = [];
+    let successCount = 0;
+    let failureCount = 0;
+
+    for (const item of input.items) {
+      try {
+        const result = await this.stockIn(item, performedBy);
+        results.push(result);
+        successCount++;
+      } catch {
+        failureCount++;
+      }
+    }
+
+    return { results, successCount, failureCount };
   }
 }

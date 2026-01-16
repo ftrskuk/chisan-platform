@@ -1,8 +1,13 @@
 import { z } from "zod";
-import { STOCK_CONDITIONS, STOCK_STATUSES } from "../types/stock";
+import {
+  STOCK_CONDITIONS,
+  STOCK_STATUSES,
+  STOCK_SOURCE_TYPES,
+} from "../types/stock";
 
 export const stockConditionSchema = z.enum(STOCK_CONDITIONS);
 export const stockStatusSchema = z.enum(STOCK_STATUSES);
+export const stockSourceTypeSchema = z.enum(STOCK_SOURCE_TYPES);
 
 export const stockSearchSchema = z.object({
   warehouseId: z.string().uuid().optional(),
@@ -23,3 +28,19 @@ export const stockSearchSchema = z.object({
 });
 
 export type StockSearchInput = z.infer<typeof stockSearchSchema>;
+
+export const createStockInSchema = z.object({
+  itemId: z.string().uuid(),
+  locationId: z.string().uuid(),
+  widthMm: z.coerce.number().int().min(50).max(2500),
+  weightKg: z.coerce.number().positive().max(10000),
+  quantity: z.coerce.number().int().positive().default(1),
+  condition: stockConditionSchema,
+  sourceType: stockSourceTypeSchema,
+  lotNumber: z.string().max(50).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+export const bulkStockInSchema = z.object({
+  items: z.array(createStockInSchema).min(1).max(50),
+});
