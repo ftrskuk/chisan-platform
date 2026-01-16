@@ -63,11 +63,11 @@ graph TD
          ▼
 ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
 │     items       │◀─────│     brands      │◀─────│    partners     │
-│                 │ N:1  │                 │ N:1  │                 │
+│                 │ N:1  │ - internal_code │ N:1  │                 │
 │ - paper_type_id │      │ - partner_id    │      │ - type          │
 │ - brand_id      │      │ - code (APRIL)  │      │ - country       │
 │ - grammage      │      └─────────────────┘      └─────────────────┘
-│ - width_mm      │
+│ - form          │
 └────────┬────────┘
          │ 1:N (Future)
          ▼
@@ -409,11 +409,12 @@ INSERT INTO brands (partner_id, code, name) VALUES
 
 Item Master defines paper product specifications. This is a **specification catalog**, not physical inventory. Physical stock (including condition: parent/slitted) is tracked in the `stocks` table (INV-F003).
 
-Paper identification pattern from current Excel:
+Paper identification pattern:
 
 ```
-{PAPER_TYPE} [{BRAND}], {GRAMMAGE} G, {WIDTH} MM
-Example: WOODFREE OFFSET [WUXING], 70 G, 1000 MM
+{PAPER_TYPE} [{BRAND}], {GRAMMAGE} G, {FORM}
+Example: WOODFREE OFFSET [WUXING], 70 G, ROLL
+Item Code: WF-03A-70-R (TYPE-BRAND_INTERNAL-GSM-FORM)
 ```
 
 ### Database Schema
@@ -468,8 +469,8 @@ CREATE TABLE items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   -- Identification
-  item_code TEXT UNIQUE NOT NULL,      -- Auto: 'WF-70-1000-R'
-  display_name TEXT NOT NULL,          -- 'Woodfree Offset 70g 1000mm Roll'
+  item_code TEXT UNIQUE NOT NULL,      -- Auto: 'WF-03A-70-R'
+  display_name TEXT NOT NULL,          -- 'Woodfree Offset [WUXING] 70g Roll'
 
   -- Classification
   paper_type_id UUID NOT NULL REFERENCES paper_types(id),
@@ -477,13 +478,12 @@ CREATE TABLE items (
 
   -- Specifications
   grammage INTEGER NOT NULL,           -- g/m² (30-500)
-  width_mm INTEGER,                    -- mm (nullable for sheets)
   form TEXT NOT NULL CHECK (form IN ('roll', 'sheet')),
 
   -- Roll-specific
   core_diameter_inch NUMERIC(3,1),     -- 3.0, 6.0 inch
 
-  -- Sheet-specific
+  -- Sheet-specific (width tracked at stock level for rolls)
   length_mm INTEGER,
   sheets_per_ream INTEGER DEFAULT 500,
 
@@ -507,9 +507,14 @@ CREATE INDEX idx_items_grammage ON items(grammage);
 CREATE INDEX idx_items_form ON items(form);
 CREATE INDEX idx_items_active ON items(is_active);
 
--- Composite for common search
-CREATE INDEX idx_items_type_grammage_width
-  ON items(paper_type_id, grammage, width_mm);
+-- Partial unique indexes for item specification
+CREATE UNIQUE INDEX idx_items_unique_with_brand
+  ON items(paper_type_id, brand_id, grammage, form)
+  WHERE brand_id IS NOT NULL;
+
+CREATE UNIQUE INDEX idx_items_unique_without_brand
+  ON items(paper_type_id, grammage, form)
+  WHERE brand_id IS NULL;
 
 -- RLS
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;
@@ -530,21 +535,27 @@ CREATE OR REPLACE FUNCTION generate_item_code()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
   type_code TEXT;
+  brand_identifier TEXT;
   form_code TEXT;
 BEGIN
-  -- Get paper type code
+  IF NEW.item_code IS NOT NULL AND NEW.item_code != '' THEN
+    RETURN NEW;
+  END IF;
+
   SELECT code INTO type_code FROM paper_types WHERE id = NEW.paper_type_id;
 
-  -- Determine form code
+  IF NEW.brand_id IS NOT NULL THEN
+    SELECT COALESCE(internal_code, code) INTO brand_identifier
+    FROM brands WHERE id = NEW.brand_id;
+  END IF;
+
   form_code := CASE WHEN NEW.form = 'roll' THEN 'R' ELSE 'S' END;
 
-  -- Generate code: WF-70-1000-R or WF-70-A4-S
-  IF NEW.item_code IS NULL OR NEW.item_code = '' THEN
-    IF NEW.form = 'roll' THEN
-      NEW.item_code := type_code || '-' || NEW.grammage || '-' || NEW.width_mm || '-' || form_code;
-    ELSE
-      NEW.item_code := type_code || '-' || NEW.grammage || '-' || NEW.width_mm || 'x' || NEW.length_mm || '-' || form_code;
-    END IF;
+  -- Generate code: TYPE-BRAND_INTERNAL-GSM-FORM (e.g., WF-03A-70-R)
+  IF brand_identifier IS NOT NULL THEN
+    NEW.item_code := type_code || '-' || brand_identifier || '-' || NEW.grammage || '-' || form_code;
+  ELSE
+    NEW.item_code := type_code || '-' || NEW.grammage || '-' || form_code;
   END IF;
 
   RETURN NEW;
@@ -579,52 +590,50 @@ CREATE TRIGGER items_generate_code
 | `grammage`      | number  | Exact grammage       |
 | `grammage_min`  | number  | Minimum grammage     |
 | `grammage_max`  | number  | Maximum grammage     |
-| `width_mm`      | number  | Exact width          |
 | `form`          | string  | 'roll' or 'sheet'    |
 | `is_active`     | boolean | Active status        |
 | `q`             | string  | Search display_name  |
 
 ### Business Rules
 
-| ID      | Rule                      | Description                                                                  |
-| ------- | ------------------------- | ---------------------------------------------------------------------------- |
-| ITM-R01 | Auto code                 | item_code auto-generated if not provided                                     |
-| ITM-R02 | Grammage range            | Grammage must be 30-500 g/m²                                                 |
-| ITM-R03 | Width range               | Width must be 50-2500 mm for rolls                                           |
-| ITM-R04 | Roll requires width       | Roll form must have width_mm                                                 |
-| ITM-R05 | Sheet requires dimensions | Sheet form must have width_mm and length_mm                                  |
-| ITM-R06 | No hard delete            | Cannot delete items with stock history                                       |
-| ITM-R07 | Unique spec               | Combination of paper_type + brand + grammage + width + form should be unique |
+| ID      | Rule                  | Description                                                        |
+| ------- | --------------------- | ------------------------------------------------------------------ |
+| ITM-R01 | Auto code             | item_code auto-generated: TYPE-BRAND_INTERNAL-GSM-FORM             |
+| ITM-R02 | Grammage range        | Grammage must be 30-500 g/m²                                       |
+| ITM-R03 | Sheet requires length | Sheet form must have length_mm                                     |
+| ITM-R04 | No hard delete        | Cannot delete items with stock history                             |
+| ITM-R05 | Unique spec           | Combination of paper_type + brand + grammage + form must be unique |
 
 ### Seed Data
 
 ```sql
 -- Sample Items (after paper_types and brands exist)
-INSERT INTO items (display_name, paper_type_id, brand_id, grammage, width_mm, form, core_diameter_inch) VALUES
-  ('Woodfree Offset [WUXING] 70g 1000mm',
+-- Note: width is tracked at stock level, not item level
+INSERT INTO items (display_name, paper_type_id, brand_id, grammage, form, core_diameter_inch) VALUES
+  ('Woodfree Offset [WUXING] 70g Roll',
    (SELECT id FROM paper_types WHERE code = 'WF'),
    (SELECT id FROM brands WHERE code = 'WUXING'),
-   70, 1000, 'roll', 3.0),
+   70, 'roll', 3.0),
 
-  ('Offset IK Bluish White [APP] 70g 1580mm',
+  ('Offset IK Bluish White [APP] 70g Roll',
    (SELECT id FROM paper_types WHERE code = 'OFF'),
    (SELECT id FROM brands WHERE code = 'APP'),
-   70, 1580, 'roll', 3.0),
+   70, 'roll', 3.0),
 
-  ('Natural White [APRIL] 90g 1700mm',
+  ('Natural White [APRIL] 90g Roll',
    (SELECT id FROM paper_types WHERE code = 'NW'),
    (SELECT id FROM brands WHERE code = 'APRIL'),
-   90, 1700, 'roll', 3.0),
+   90, 'roll', 3.0),
 
-  ('Form Bond [NPI] 80g 1700mm',
+  ('Form Bond [NPI] 80g Roll',
    (SELECT id FROM paper_types WHERE code = 'FB'),
    (SELECT id FROM brands WHERE code = 'NPI'),
-   80, 1700, 'roll', 3.0),
+   80, 'roll', 3.0),
 
-  ('Photocopy Paper [BOHUI] 75g 210mm',
+  ('Photocopy Paper [BOHUI] 75g Roll',
    (SELECT id FROM paper_types WHERE code = 'CP'),
    (SELECT id FROM brands WHERE code = 'BOHUI'),
-   75, 210, 'roll', 3.0);
+   75, 'roll', 3.0);
 ```
 
 ---
@@ -676,7 +685,7 @@ Master Data is complete when:
 - [ ] Brands linked to supplier partners
 - [ ] Paper types lookup table populated
 - [ ] Items CRUD with auto-generated codes
-- [ ] Items searchable by paper_type, brand, grammage, width
+- [ ] Items searchable by paper_type, brand, grammage, form
 - [ ] All tables have RLS policies
 - [ ] Seed data loads successfully
 - [ ] APIs return proper validation errors

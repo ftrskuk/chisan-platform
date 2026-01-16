@@ -61,16 +61,6 @@ export function itemColumns({
       cell: ({ row }) => `${row.getValue("grammage")} g/m²`,
     },
     {
-      accessorKey: "widthMm",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="폭" />
-      ),
-      cell: ({ row }) => {
-        const width = row.getValue("widthMm") as number | null;
-        return width ? `${width} mm` : "-";
-      },
-    },
-    {
       accessorKey: "form",
       header: "형태",
       cell: ({ row }) => (

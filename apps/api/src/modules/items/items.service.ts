@@ -35,7 +35,6 @@ interface DbItem {
   paper_type_id: string;
   brand_id: string | null;
   grammage: number;
-  width_mm: number | null;
   form: string;
   core_diameter_inch: number | null;
   length_mm: number | null;
@@ -52,6 +51,7 @@ interface DbBrand {
   partner_id: string;
   code: string;
   name: string;
+  internal_code: string | null;
   description: string | null;
   is_active: boolean;
   created_at: string;
@@ -83,7 +83,6 @@ export class ItemsService {
       paperTypeId: db.paper_type_id,
       brandId: db.brand_id,
       grammage: db.grammage,
-      widthMm: db.width_mm,
       form: db.form as ItemForm,
       coreDiameterInch: db.core_diameter_inch
         ? Number(db.core_diameter_inch)
@@ -104,6 +103,7 @@ export class ItemsService {
       partnerId: db.partner_id,
       code: db.code,
       name: db.name,
+      internalCode: db.internal_code,
       description: db.description,
       isActive: db.is_active,
       createdAt: db.created_at,
@@ -187,9 +187,6 @@ export class ItemsService {
     if (search?.grammageMax) {
       query = query.lte("grammage", search.grammageMax);
     }
-    if (search?.widthMm) {
-      query = query.eq("width_mm", search.widthMm);
-    }
     if (search?.form) {
       query = query.eq("form", search.form);
     }
@@ -258,7 +255,6 @@ export class ItemsService {
         paper_type_id: input.paperTypeId,
         brand_id: input.brandId,
         grammage: input.grammage,
-        width_mm: input.widthMm,
         form: input.form,
         core_diameter_inch: input.coreDiameterInch,
         length_mm: input.lengthMm,
@@ -286,7 +282,6 @@ export class ItemsService {
       updateData.paper_type_id = input.paperTypeId;
     if (input.brandId !== undefined) updateData.brand_id = input.brandId;
     if (input.grammage !== undefined) updateData.grammage = input.grammage;
-    if (input.widthMm !== undefined) updateData.width_mm = input.widthMm;
     if (input.form !== undefined) updateData.form = input.form;
     if (input.coreDiameterInch !== undefined)
       updateData.core_diameter_inch = input.coreDiameterInch;

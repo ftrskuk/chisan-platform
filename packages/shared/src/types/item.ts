@@ -21,7 +21,6 @@ export interface Item {
   paperTypeId: string;
   brandId: string | null;
   grammage: number;
-  widthMm: number | null;
   form: ItemForm;
   coreDiameterInch: number | null;
   lengthMm: number | null;

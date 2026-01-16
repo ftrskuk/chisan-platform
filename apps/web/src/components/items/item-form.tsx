@@ -62,7 +62,6 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
           paperTypeId: item.paperTypeId,
           brandId: item.brandId ?? undefined,
           grammage: item.grammage,
-          widthMm: item.widthMm ?? undefined,
           form: item.form,
           coreDiameterInch: item.coreDiameterInch ?? undefined,
           lengthMm: item.lengthMm ?? undefined,
@@ -230,29 +229,6 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
         </div>
 
         <Separator />
-
-        <FormField
-          control={form.control}
-          name="widthMm"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>폭 (mm) {(isRoll || isSheet) && "*"}</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="number"
-                  placeholder="1000"
-                  onChange={(e) =>
-                    field.onChange(
-                      e.target.value ? Number(e.target.value) : undefined,
-                    )
-                  }
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         {isRoll && (
           <FormField

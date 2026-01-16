@@ -44,6 +44,7 @@ interface DbBrand {
   partner_id: string;
   code: string;
   name: string;
+  internal_code: string | null;
   description: string | null;
   is_active: boolean;
   created_at: string;
@@ -86,6 +87,7 @@ export class PartnersService {
       partnerId: db.partner_id,
       code: db.code,
       name: db.name,
+      internalCode: db.internal_code,
       description: db.description,
       isActive: db.is_active,
       createdAt: db.created_at,

@@ -30,6 +30,7 @@ export interface Brand {
   partnerId: string;
   code: string;
   name: string;
+  internalCode: string | null;
   description: string | null;
   isActive: boolean;
   createdAt: string;
