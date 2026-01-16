@@ -5,3 +5,4 @@ export * from "./settings";
 export * from "./warehouse";
 export * from "./partner";
 export * from "./item";
+export * from "./stock";

@@ -18,7 +18,13 @@ type StatusVariant =
   | "inventory"
   | "import"
   | "production"
-  | "settings";
+  | "settings"
+  | "parent"
+  | "slitted"
+  | "available"
+  | "reserved"
+  | "quarantine"
+  | "disposed";
 
 interface StatusBadgeProps {
   variant: StatusVariant;
@@ -92,6 +98,30 @@ const variantConfig: Record<
   settings: {
     label: "설정",
     dotColor: "bg-slate-500",
+  },
+  parent: {
+    label: "원지",
+    dotColor: "bg-blue-600",
+  },
+  slitted: {
+    label: "슬리팅",
+    dotColor: "bg-cyan-500",
+  },
+  available: {
+    label: "가용",
+    dotColor: "bg-emerald-500",
+  },
+  reserved: {
+    label: "예약",
+    dotColor: "bg-amber-500",
+  },
+  quarantine: {
+    label: "격리",
+    dotColor: "bg-red-500",
+  },
+  disposed: {
+    label: "폐기",
+    dotColor: "bg-gray-500",
   },
 };
 

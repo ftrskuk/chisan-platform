@@ -9,6 +9,7 @@ import { SettingsModule } from "./modules/settings/settings.module";
 import { WarehousesModule } from "./modules/warehouses/warehouses.module";
 import { PartnersModule } from "./modules/partners/partners.module";
 import { ItemsModule } from "./modules/items/items.module";
+import { StocksModule } from "./modules/stocks/stocks.module";
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ItemsModule } from "./modules/items/items.module";
     WarehousesModule,
     PartnersModule,
     ItemsModule,
+    StocksModule,
   ],
   controllers: [AppController],
 })

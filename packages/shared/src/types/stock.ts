@@ -1,0 +1,87 @@
+import type { Item, PaperType } from "./item";
+import type { Brand } from "./partner";
+import type { Location, Warehouse } from "./warehouse";
+
+export const STOCK_CONDITIONS = ["parent", "slitted"] as const;
+export type StockCondition = (typeof STOCK_CONDITIONS)[number];
+
+export const STOCK_STATUSES = [
+  "available",
+  "reserved",
+  "quarantine",
+  "disposed",
+] as const;
+export type StockStatus = (typeof STOCK_STATUSES)[number];
+
+export const MOVEMENT_TYPES = [
+  "in",
+  "out",
+  "adjustment",
+  "move",
+  "quarantine",
+] as const;
+export type MovementType = (typeof MOVEMENT_TYPES)[number];
+
+export const MOVEMENT_REFERENCE_TYPES = [
+  "import",
+  "production",
+  "sale",
+  "adjustment",
+  "transfer",
+] as const;
+export type MovementReferenceType = (typeof MOVEMENT_REFERENCE_TYPES)[number];
+
+export interface Stock {
+  id: string;
+  itemId: string;
+  locationId: string;
+  widthMm: number;
+  condition: StockCondition;
+  quantity: number;
+  weightKg: number | null;
+  status: StockStatus;
+  isActive: boolean;
+  batchNumber: string | null;
+  lotNumber: string | null;
+  receivedAt: string | null;
+  parentStockId: string | null;
+  sourceType: string | null;
+  sourceReferenceId: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockWithRelations extends Stock {
+  item: Item & { paperType: PaperType; brand: Brand | null };
+  location: Location;
+  warehouse: Warehouse;
+}
+
+export interface StockMovement {
+  id: string;
+  stockId: string;
+  movementType: MovementType;
+  quantityChange: number;
+  weightChangeKg: number | null;
+  quantityBefore: number;
+  quantityAfter: number;
+  weightBeforeKg: number | null;
+  weightAfterKg: number | null;
+  reason: string | null;
+  referenceType: MovementReferenceType | null;
+  referenceId: string | null;
+  performedBy: string | null;
+  createdAt: string;
+}
+
+export interface StockMovementWithRelations extends StockMovement {
+  stock: Stock;
+}
+
+export interface StocksResponse {
+  data: StockWithRelations[];
+  total: number;
+  limit: number;
+  offset: number;
+}

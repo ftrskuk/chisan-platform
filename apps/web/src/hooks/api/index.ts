@@ -6,3 +6,4 @@ export * from "./use-paper-types";
 export * from "./use-users";
 export * from "./use-audit-logs";
 export * from "./use-settings";
+export * from "./use-stocks";

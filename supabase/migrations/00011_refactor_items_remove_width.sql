@@ -8,10 +8,13 @@
 
 ALTER TABLE brands ADD COLUMN IF NOT EXISTS internal_code TEXT;
 
-DO $$ BEGIN
-  ALTER TABLE brands ADD CONSTRAINT brands_internal_code_unique UNIQUE (internal_code);
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'brands_internal_code_unique'
+  ) THEN
+    ALTER TABLE brands ADD CONSTRAINT brands_internal_code_unique UNIQUE (internal_code);
+  END IF;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_brands_internal_code ON brands(internal_code);

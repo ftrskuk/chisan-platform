@@ -103,3 +103,59 @@ INSERT INTO items (display_name, paper_type_id, brand_id, grammage, form, core_d
    (SELECT id FROM brands WHERE code = 'ROXCEL'),
    120, 'roll', 3.0)
 ON CONFLICT (item_code) DO NOTHING;
+
+-- ============================================================================
+-- Stocks (sample inventory data)
+-- ============================================================================
+
+INSERT INTO stocks (
+  item_id,
+  location_id,
+  width_mm,
+  condition,
+  quantity,
+  weight_kg,
+  status,
+  batch_number,
+  received_at
+) VALUES
+  ((SELECT id FROM items WHERE display_name LIKE 'Woodfree Offset [WUXING] 70g%' LIMIT 1),
+   (SELECT id FROM locations WHERE code = 'DEFAULT' LIMIT 1),
+   1050, 'parent', 5, 4500.000, 'available', 'BATCH-2024-001', NOW() - INTERVAL '30 days'),
+
+  ((SELECT id FROM items WHERE display_name LIKE 'Woodfree Offset [WUXING] 70g%' LIMIT 1),
+   (SELECT id FROM locations WHERE code = 'DEFAULT' LIMIT 1),
+   520, 'slitted', 10, 2100.000, 'available', 'BATCH-2024-001', NOW() - INTERVAL '25 days'),
+
+  ((SELECT id FROM items WHERE display_name LIKE 'Woodfree Offset [WUXING] 80g%' LIMIT 1),
+   (SELECT id FROM locations WHERE code = 'DEFAULT' LIMIT 1),
+   1020, 'parent', 8, 7200.000, 'available', 'BATCH-2024-002', NOW() - INTERVAL '20 days'),
+
+  ((SELECT id FROM items WHERE display_name LIKE 'Offset IK Bluish White [APP] 70g%' LIMIT 1),
+   (SELECT id FROM locations WHERE code = 'DEFAULT' LIMIT 1),
+   1000, 'parent', 12, 10800.000, 'available', 'BATCH-2024-003', NOW() - INTERVAL '15 days'),
+
+  ((SELECT id FROM items WHERE display_name LIKE 'Offset IK Bluish White [APP] 70g%' LIMIT 1),
+   (SELECT id FROM locations WHERE code = 'DEFAULT' LIMIT 1),
+   480, 'slitted', 20, 4200.000, 'available', 'BATCH-2024-003', NOW() - INTERVAL '12 days'),
+
+  ((SELECT id FROM items WHERE display_name LIKE 'Natural White [APRIL] 90g%' LIMIT 1),
+   (SELECT id FROM locations WHERE code = 'DEFAULT' LIMIT 1),
+   1100, 'parent', 6, 5940.000, 'available', 'BATCH-2024-004', NOW() - INTERVAL '10 days'),
+
+  ((SELECT id FROM items WHERE display_name LIKE 'Natural White [APRIL] 90g%' LIMIT 1),
+   (SELECT id FROM locations WHERE code = 'DEFAULT' LIMIT 1),
+   550, 'slitted', 8, 3960.000, 'reserved', 'BATCH-2024-004', NOW() - INTERVAL '8 days'),
+
+  ((SELECT id FROM items WHERE display_name LIKE 'Art Paper [H-K] 128g%' LIMIT 1),
+   (SELECT id FROM locations WHERE code = 'DEFAULT' LIMIT 1),
+   900, 'parent', 4, 4608.000, 'available', 'BATCH-2024-005', NOW() - INTERVAL '5 days'),
+
+  ((SELECT id FROM items WHERE display_name LIKE 'Art Paper [H-K] 128g%' LIMIT 1),
+   (SELECT id FROM locations WHERE code = 'DEFAULT' LIMIT 1),
+   450, 'slitted', 6, 3456.000, 'quarantine', 'BATCH-2024-005', NOW() - INTERVAL '3 days'),
+
+  ((SELECT id FROM items WHERE display_name LIKE 'Kraft [ROXCEL] 120g%' LIMIT 1),
+   (SELECT id FROM locations WHERE code = 'DEFAULT' LIMIT 1),
+   1200, 'parent', 10, 14400.000, 'available', 'BATCH-2024-006', NOW() - INTERVAL '2 days')
+ON CONFLICT DO NOTHING;

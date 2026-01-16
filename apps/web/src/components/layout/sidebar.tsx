@@ -11,6 +11,7 @@ import {
   FileText,
   Settings,
   UserCog,
+  Boxes,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +56,16 @@ const navigation: NavEntry[] = [
         href: "/master/items",
         label: "품목 관리",
         icon: <Package className="h-[18px] w-[18px]" />,
+      },
+    ],
+  },
+  {
+    title: "재고 관리",
+    items: [
+      {
+        href: "/inventory/stocks",
+        label: "재고 조회",
+        icon: <Boxes className="h-[18px] w-[18px]" />,
       },
     ],
   },
