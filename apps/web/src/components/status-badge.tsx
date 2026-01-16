@@ -9,7 +9,16 @@ type StatusVariant =
   | "customer"
   | "both"
   | "roll"
-  | "sheet";
+  | "sheet"
+  | "admin"
+  | "manager"
+  | "worker"
+  | "auth"
+  | "user"
+  | "inventory"
+  | "import"
+  | "production"
+  | "settings";
 
 interface StatusBadgeProps {
   variant: StatusVariant;
@@ -47,6 +56,42 @@ const variantConfig: Record<
   sheet: {
     label: "시트",
     dotColor: "bg-teal-500",
+  },
+  admin: {
+    label: "관리자",
+    dotColor: "bg-red-500",
+  },
+  manager: {
+    label: "매니저",
+    dotColor: "bg-blue-500",
+  },
+  worker: {
+    label: "작업자",
+    dotColor: "bg-slate-500",
+  },
+  auth: {
+    label: "인증",
+    dotColor: "bg-purple-500",
+  },
+  user: {
+    label: "사용자",
+    dotColor: "bg-blue-500",
+  },
+  inventory: {
+    label: "재고",
+    dotColor: "bg-emerald-500",
+  },
+  import: {
+    label: "수입",
+    dotColor: "bg-amber-500",
+  },
+  production: {
+    label: "생산",
+    dotColor: "bg-orange-500",
+  },
+  settings: {
+    label: "설정",
+    dotColor: "bg-slate-500",
   },
 };
 

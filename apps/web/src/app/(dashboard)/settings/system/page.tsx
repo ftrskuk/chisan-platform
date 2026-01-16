@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { api } from "@/lib/api";
+import { toast } from "sonner";
+
+import { useSettings, useUpdateSetting } from "@/hooks/api";
+import { PageHeader } from "@/components/layout";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Setting, SettingCategory } from "@repo/shared";
+import { useState, useEffect } from "react";
 
 const CATEGORY_LABELS: Record<SettingCategory, string> = {
   company: "회사 정보",
@@ -23,231 +30,183 @@ const SETTING_LABELS: Record<string, string> = {
   slack_webhook: "Slack Webhook URL",
 };
 
+const CATEGORIES: SettingCategory[] = [
+  "company",
+  "regional",
+  "inventory",
+  "notifications",
+];
+
 export default function SystemSettingsPage() {
-  const [settings, setSettings] = useState<Setting[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState<string | null>(null);
+  const { data: settings, isLoading } = useSettings();
+  const updateMutation = useUpdateSetting();
   const [editValues, setEditValues] = useState<Record<string, unknown>>({});
 
-  const fetchSettings = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await api.get<Setting[]>("/api/v1/settings");
-      setSettings(data);
-
+  useEffect(() => {
+    if (settings) {
       const values: Record<string, unknown> = {};
-      for (const setting of data) {
+      for (const setting of settings) {
         values[`${setting.category}.${setting.key}`] = setting.value;
       }
       setEditValues(values);
-
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch settings");
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  }, [settings]);
 
-  useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
-
-  const handleSave = async (category: SettingCategory, key: string) => {
-    const settingKey = `${category}.${key}`;
-    const value = editValues[settingKey];
-
-    try {
-      setSaving(settingKey);
-      await api.patch(`/api/v1/settings/${category}/${key}`, { value });
-      await fetchSettings();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save setting");
-    } finally {
-      setSaving(null);
-    }
-  };
-
-  const groupedSettings = settings.reduce(
+  const groupedSettings = (settings ?? []).reduce(
     (acc, setting) => {
       const category = setting.category as SettingCategory;
-      if (!acc[category]) {
-        acc[category] = [];
-      }
+      if (!acc[category]) acc[category] = [];
       acc[category].push(setting);
       return acc;
     },
     {} as Record<SettingCategory, Setting[]>,
   );
 
-  const categories: SettingCategory[] = [
-    "company",
-    "regional",
-    "inventory",
-    "notifications",
-  ];
+  const handleSave = async (category: SettingCategory, key: string) => {
+    const settingKey = `${category}.${key}`;
+    const value = editValues[settingKey];
 
-  if (loading) {
+    try {
+      await updateMutation.mutateAsync({ category, key, value });
+      toast.success("설정이 저장되었습니다.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "저장 중 오류가 발생했습니다.",
+      );
+    }
+  };
+
+  const hasChanges = (setting: Setting) => {
+    const settingKey = `${setting.category}.${setting.key}`;
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-gray-500">로딩 중...</div>
+      JSON.stringify(editValues[settingKey]) !== JSON.stringify(setting.value)
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="시스템 설정"
+          description="시스템 전체에 적용되는 설정을 관리합니다."
+        />
+        <div className="space-y-8">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="space-y-4">
+              <Skeleton className="h-4 w-24" />
+              <div className="space-y-3">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">시스템 설정</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          시스템 전체에 적용되는 설정을 관리합니다.
-        </p>
-      </div>
+      <PageHeader
+        title="시스템 설정"
+        description="시스템 전체에 적용되는 설정을 관리합니다."
+      />
 
-      {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
-
-      <div className="space-y-6">
-        {categories.map((category) => {
+      <div className="space-y-8">
+        {CATEGORIES.map((category) => {
           const categorySettings = groupedSettings[category] ?? [];
           if (categorySettings.length === 0) return null;
 
           return (
-            <div
-              key={category}
-              className="overflow-hidden rounded-lg border border-gray-200 bg-white"
-            >
-              <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
-                <h2 className="text-lg font-medium text-gray-900">
-                  {CATEGORY_LABELS[category]}
-                </h2>
-              </div>
-              <div className="divide-y divide-gray-200">
-                {categorySettings.map((setting) => {
+            <section key={category}>
+              <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {CATEGORY_LABELS[category]}
+              </h2>
+              <div className="space-y-1 rounded-md border border-gray-100 bg-white">
+                {categorySettings.map((setting, index) => {
                   const settingKey = `${setting.category}.${setting.key}`;
                   const currentValue = editValues[settingKey];
-                  const originalValue = setting.value;
-                  const hasChanges =
-                    JSON.stringify(currentValue) !==
-                    JSON.stringify(originalValue);
-                  const isSaving = saving === settingKey;
+                  const isBoolean =
+                    setting.key === "fifo_enabled" ||
+                    setting.key === "email_enabled";
+                  const showSave = hasChanges(setting);
+                  const isSaving = updateMutation.isPending;
 
                   return (
-                    <div key={setting.id} className="px-6 py-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <label className="block text-sm font-medium text-gray-900">
-                            {SETTING_LABELS[setting.key] ?? setting.key}
-                          </label>
-                          {setting.description && (
-                            <p className="mt-1 text-xs text-gray-500">
-                              {setting.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <SettingInput
-                            settingKey={setting.key}
-                            value={currentValue}
-                            onChange={(value) =>
+                    <div
+                      key={setting.id}
+                      className={`flex items-center justify-between gap-4 px-4 py-3 ${
+                        index !== categorySettings.length - 1
+                          ? "border-b border-gray-100"
+                          : ""
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <label className="text-sm font-medium text-foreground">
+                          {SETTING_LABELS[setting.key] ?? setting.key}
+                        </label>
+                        {setting.description && (
+                          <p className="text-xs text-muted-foreground">
+                            {setting.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isBoolean ? (
+                          <Switch
+                            checked={Boolean(currentValue)}
+                            onCheckedChange={(checked) =>
                               setEditValues((prev) => ({
                                 ...prev,
-                                [settingKey]: value,
+                                [settingKey]: checked,
                               }))
                             }
                           />
-                          {hasChanges && (
-                            <button
-                              onClick={() =>
-                                handleSave(
-                                  setting.category as SettingCategory,
-                                  setting.key,
-                                )
-                              }
-                              disabled={isSaving}
-                              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                            >
-                              {isSaving ? "저장 중..." : "저장"}
-                            </button>
-                          )}
-                        </div>
+                        ) : (
+                          <Input
+                            type="text"
+                            value={
+                              currentValue === null
+                                ? ""
+                                : String(currentValue ?? "")
+                            }
+                            placeholder={
+                              currentValue === null
+                                ? "설정되지 않음"
+                                : undefined
+                            }
+                            onChange={(e) =>
+                              setEditValues((prev) => ({
+                                ...prev,
+                                [settingKey]: e.target.value || null,
+                              }))
+                            }
+                            className="w-64"
+                          />
+                        )}
+                        {showSave && (
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              handleSave(
+                                setting.category as SettingCategory,
+                                setting.key,
+                              )
+                            }
+                            disabled={isSaving}
+                          >
+                            {isSaving ? "저장 중..." : "저장"}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>
     </div>
-  );
-}
-
-interface SettingInputProps {
-  settingKey: string;
-  value: unknown;
-  onChange: (value: unknown) => void;
-}
-
-function SettingInput({ settingKey, value, onChange }: SettingInputProps) {
-  if (settingKey === "fifo_enabled" || settingKey === "email_enabled") {
-    return (
-      <button
-        type="button"
-        onClick={() => onChange(!value)}
-        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-          value ? "bg-blue-600" : "bg-gray-200"
-        }`}
-      >
-        <span
-          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition ${
-            value ? "translate-x-5" : "translate-x-0"
-          }`}
-        />
-      </button>
-    );
-  }
-
-  if (value === null) {
-    return (
-      <input
-        type="text"
-        value=""
-        placeholder="설정되지 않음"
-        onChange={(e) => onChange(e.target.value || null)}
-        className="w-64 rounded-md border border-gray-300 px-3 py-1.5 text-sm"
-      />
-    );
-  }
-
-  if (typeof value === "string") {
-    return (
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-64 rounded-md border border-gray-300 px-3 py-1.5 text-sm"
-      />
-    );
-  }
-
-  return (
-    <input
-      type="text"
-      value={JSON.stringify(value)}
-      onChange={(e) => {
-        try {
-          onChange(JSON.parse(e.target.value));
-        } catch {
-          onChange(e.target.value);
-        }
-      }}
-      className="w-64 rounded-md border border-gray-300 px-3 py-1.5 text-sm"
-    />
   );
 }

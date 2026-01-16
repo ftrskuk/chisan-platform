@@ -1,259 +1,139 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { useUsers, useToggleUserActive, useRemoveRole } from "@/hooks/api";
+import { DataTable } from "@/components/data-table";
+import { userColumns } from "@/components/users";
+import { RoleAssignmentForm } from "@/components/users";
+import { FormSheet } from "@/components/form-sheet";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { PageHeader } from "@/components/layout";
 import type { UserWithRoles, UserRole } from "@repo/shared";
 
-const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "관리자",
-  manager: "매니저",
-  worker: "작업자",
-};
-
 export default function UsersPage() {
-  const [users, setUsers] = useState<UserWithRoles[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
+  const [toggleConfirm, setToggleConfirm] = useState<UserWithRoles | null>(
+    null,
+  );
 
-  const fetchUsers = async () => {
+  const { data: users, isLoading } = useUsers();
+  const toggleMutation = useToggleUserActive();
+  const removeMutation = useRemoveRole();
+
+  const handleAssignRole = (user: UserWithRoles) => {
+    setSelectedUser(user);
+    setRoleSheetOpen(true);
+  };
+
+  const handleRemoveRole = async (user: UserWithRoles, role: UserRole) => {
     try {
-      setLoading(true);
-      const data = await api.get<UserWithRoles[]>("/api/v1/users");
-      setUsers(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch users");
-    } finally {
-      setLoading(false);
+      await removeMutation.mutateAsync({ userId: user.id, role });
+      toast.success("역할이 제거되었습니다.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "역할 제거 중 오류가 발생했습니다.",
+      );
     }
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const handleToggleActive = async (user: UserWithRoles) => {
+  const handleToggleActive = async () => {
+    if (!toggleConfirm) return;
     try {
-      const endpoint = user.isActive
-        ? `/api/v1/users/${user.id}/deactivate`
-        : `/api/v1/users/${user.id}/reactivate`;
-      await api.patch(endpoint);
-      await fetchUsers();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update user");
+      await toggleMutation.mutateAsync({
+        userId: toggleConfirm.id,
+        isActive: toggleConfirm.isActive,
+      });
+      toast.success(
+        toggleConfirm.isActive
+          ? "사용자가 비활성화되었습니다."
+          : "사용자가 활성화되었습니다.",
+      );
+      setToggleConfirm(null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "상태 변경 중 오류가 발생했습니다.",
+      );
     }
   };
 
-  const handleAssignRole = async (userId: string, role: UserRole) => {
-    try {
-      await api.post(`/api/v1/users/${userId}/roles`, { role });
-      await fetchUsers();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to assign role");
-    }
+  const handleFormSuccess = () => {
+    setRoleSheetOpen(false);
+    setSelectedUser(null);
   };
 
-  const handleRemoveRole = async (userId: string, role: UserRole) => {
-    try {
-      await api.delete(`/api/v1/users/${userId}/roles/${role}`);
-      await fetchUsers();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to remove role");
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-gray-500">로딩 중...</div>
-      </div>
-    );
-  }
+  const columns = userColumns({
+    onToggleActive: setToggleConfirm,
+    onAssignRole: handleAssignRole,
+    onRemoveRole: handleRemoveRole,
+  });
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">사용자 관리</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          시스템 사용자 목록을 관리하고 역할을 할당합니다.
-        </p>
-      </div>
+      <PageHeader
+        title="사용자 관리"
+        description="시스템 사용자 목록을 관리하고 역할을 할당합니다."
+      />
 
-      {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        data={users ?? []}
+        isLoading={isLoading}
+        searchKey="email"
+        searchPlaceholder="이메일 검색..."
+        filterableColumns={[
+          {
+            id: "isActive",
+            title: "상태",
+            options: [
+              { label: "활성", value: "true" },
+              { label: "비활성", value: "false" },
+            ],
+          },
+        ]}
+      />
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                사용자
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                역할
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                상태
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                최종 로그인
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                작업
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            {users.map((user) => (
-              <UserRow
-                key={user.id}
-                user={user}
-                onToggleActive={() => handleToggleActive(user)}
-                onAssignRole={(role) => handleAssignRole(user.id, role)}
-                onRemoveRole={(role) => handleRemoveRole(user.id, role)}
-              />
-            ))}
-          </tbody>
-        </table>
-
-        {users.length === 0 && (
-          <div className="py-12 text-center text-gray-500">
-            등록된 사용자가 없습니다.
-          </div>
+      <FormSheet
+        open={roleSheetOpen}
+        onOpenChange={(open) => {
+          setRoleSheetOpen(open);
+          if (!open) setSelectedUser(null);
+        }}
+        title="역할 추가"
+        description={
+          selectedUser
+            ? `${selectedUser.displayName ?? selectedUser.email}에게 역할을 추가합니다.`
+            : undefined
+        }
+      >
+        {selectedUser && (
+          <RoleAssignmentForm
+            user={selectedUser}
+            onSuccess={handleFormSuccess}
+          />
         )}
-      </div>
+      </FormSheet>
+
+      <ConfirmDialog
+        open={!!toggleConfirm}
+        onOpenChange={(open) => !open && setToggleConfirm(null)}
+        title={toggleConfirm?.isActive ? "사용자 비활성화" : "사용자 활성화"}
+        description={
+          toggleConfirm?.isActive
+            ? `"${toggleConfirm?.displayName ?? toggleConfirm?.email}" 사용자를 비활성화하시겠습니까?`
+            : `"${toggleConfirm?.displayName ?? toggleConfirm?.email}" 사용자를 활성화하시겠습니까?`
+        }
+        onConfirm={handleToggleActive}
+        isLoading={toggleMutation.isPending}
+        variant={toggleConfirm?.isActive ? "destructive" : "default"}
+        confirmText={toggleConfirm?.isActive ? "비활성화" : "활성화"}
+      />
     </div>
-  );
-}
-
-interface UserRowProps {
-  user: UserWithRoles;
-  onToggleActive: () => void;
-  onAssignRole: (role: UserRole) => void;
-  onRemoveRole: (role: UserRole) => void;
-}
-
-function UserRow({
-  user,
-  onToggleActive,
-  onAssignRole,
-  onRemoveRole,
-}: UserRowProps) {
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
-
-  const availableRoles: UserRole[] = (
-    ["admin", "manager", "worker"] as const
-  ).filter((role) => !user.roles.includes(role));
-
-  return (
-    <tr>
-      <td className="whitespace-nowrap px-6 py-4">
-        <div className="flex items-center">
-          {user.avatarUrl ? (
-            <img
-              className="h-10 w-10 rounded-full"
-              src={user.avatarUrl}
-              alt=""
-            />
-          ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-gray-500">
-              {(user.displayName ?? user.email).charAt(0).toUpperCase()}
-            </div>
-          )}
-          <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">
-              {user.displayName ?? "-"}
-            </div>
-            <div className="text-sm text-gray-500">{user.email}</div>
-          </div>
-        </div>
-      </td>
-      <td className="whitespace-nowrap px-6 py-4">
-        <div className="flex flex-wrap gap-1">
-          {user.roles.map((role) => (
-            <span
-              key={role}
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                role === "admin"
-                  ? "bg-red-100 text-red-800"
-                  : role === "manager"
-                    ? "bg-blue-100 text-blue-800"
-                    : "bg-gray-100 text-gray-800"
-              }`}
-            >
-              {ROLE_LABELS[role]}
-              <button
-                onClick={() => onRemoveRole(role)}
-                className="ml-0.5 hover:opacity-70"
-                title="역할 제거"
-              >
-                ×
-              </button>
-            </span>
-          ))}
-          {user.roles.length === 0 && (
-            <span className="text-sm text-gray-400">역할 없음</span>
-          )}
-        </div>
-      </td>
-      <td className="whitespace-nowrap px-6 py-4">
-        <span
-          className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-            user.isActive
-              ? "bg-green-100 text-green-800"
-              : "bg-gray-100 text-gray-800"
-          }`}
-        >
-          {user.isActive ? "활성" : "비활성"}
-        </span>
-      </td>
-      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-        {user.lastLoginAt
-          ? new Date(user.lastLoginAt).toLocaleString("ko-KR")
-          : "-"}
-      </td>
-      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-        <div className="relative inline-block">
-          <button
-            onClick={() => setShowRoleMenu(!showRoleMenu)}
-            className="mr-2 text-blue-600 hover:text-blue-900"
-            disabled={availableRoles.length === 0}
-          >
-            역할 추가
-          </button>
-          {showRoleMenu && availableRoles.length > 0 && (
-            <div className="absolute right-0 z-10 mt-2 w-36 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
-              <div className="py-1">
-                {availableRoles.map((role) => (
-                  <button
-                    key={role}
-                    onClick={() => {
-                      onAssignRole(role);
-                      setShowRoleMenu(false);
-                    }}
-                    className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    {ROLE_LABELS[role]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <button
-          onClick={onToggleActive}
-          className={
-            user.isActive
-              ? "text-red-600 hover:text-red-900"
-              : "text-green-600 hover:text-green-900"
-          }
-        >
-          {user.isActive ? "비활성화" : "활성화"}
-        </button>
-      </td>
-    </tr>
   );
 }
