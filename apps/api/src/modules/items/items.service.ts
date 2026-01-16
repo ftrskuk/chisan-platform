@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import type {
   Item,
+  Brand,
   PaperType,
   ItemForm,
   ItemWithRelations,
@@ -13,9 +14,9 @@ import type {
   CreatePaperTypeInput,
   UpdatePaperTypeInput,
   ItemSearchInput,
-  Brand,
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
+import { type DbBrand, mapBrand } from "../../common/mappers";
 
 interface DbPaperType {
   id: string;
@@ -42,18 +43,6 @@ interface DbItem {
   unit_of_measure: string;
   is_active: boolean;
   notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface DbBrand {
-  id: string;
-  partner_id: string;
-  code: string;
-  name: string;
-  internal_code: string | null;
-  description: string | null;
-  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -92,20 +81,6 @@ export class ItemsService {
       unitOfMeasure: db.unit_of_measure,
       isActive: db.is_active,
       notes: db.notes,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
-  private mapBrand(db: DbBrand): Brand {
-    return {
-      id: db.id,
-      partnerId: db.partner_id,
-      code: db.code,
-      name: db.name,
-      internalCode: db.internal_code,
-      description: db.description,
-      isActive: db.is_active,
       createdAt: db.created_at,
       updatedAt: db.updated_at,
     };
@@ -233,7 +208,7 @@ export class ItemsService {
         .eq("id", dbItem.brand_id)
         .single();
       if (brandData) {
-        brand = this.mapBrand(brandData as DbBrand);
+        brand = mapBrand(brandData as DbBrand);
       }
     }
 

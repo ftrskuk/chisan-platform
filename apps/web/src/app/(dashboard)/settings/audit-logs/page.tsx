@@ -18,16 +18,12 @@ const CATEGORY_OPTIONS: { label: string; value: AuditCategory }[] = [
   { label: "설정", value: "settings" },
 ];
 
-const DEFAULT_PAGE_SIZE = 100;
+const PAGINATION_CONFIG = { limit: 100, offset: 0 } as const;
 
 export default function AuditLogsPage() {
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
-  const [pagination] = useState({
-    limit: DEFAULT_PAGE_SIZE,
-    offset: 0,
-  });
 
-  const { data: response, isLoading } = useAuditLogs(pagination);
+  const { data: response, isLoading } = useAuditLogs(PAGINATION_CONFIG);
   const logs = response?.data ?? [];
 
   return (

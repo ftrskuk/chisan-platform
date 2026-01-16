@@ -14,6 +14,7 @@ import type {
   UpdateBrandInput,
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
+import { type DbBrand, mapBrand } from "../../common/mappers";
 
 interface DbPartner {
   id: string;
@@ -35,18 +36,6 @@ interface DbPartner {
   credit_limit: number | null;
   is_active: boolean;
   notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface DbBrand {
-  id: string;
-  partner_id: string;
-  code: string;
-  name: string;
-  internal_code: string | null;
-  description: string | null;
-  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -76,20 +65,6 @@ export class PartnersService {
       creditLimit: db.credit_limit ? Number(db.credit_limit) : null,
       isActive: db.is_active,
       notes: db.notes,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
-  private mapBrand(db: DbBrand): Brand {
-    return {
-      id: db.id,
-      partnerId: db.partner_id,
-      code: db.code,
-      name: db.name,
-      internalCode: db.internal_code,
-      description: db.description,
-      isActive: db.is_active,
       createdAt: db.created_at,
       updatedAt: db.updated_at,
     };
@@ -137,7 +112,7 @@ export class PartnersService {
 
     return {
       ...this.mapPartner(partner as DbPartner),
-      brands: ((brands as DbBrand[]) ?? []).map((db) => this.mapBrand(db)),
+      brands: ((brands as DbBrand[]) ?? []).map((db) => mapBrand(db)),
     };
   }
 
@@ -242,7 +217,7 @@ export class PartnersService {
       .order("name");
 
     if (error) throw new BadRequestException(error.message);
-    return ((data as DbBrand[]) ?? []).map((db) => this.mapBrand(db));
+    return ((data as DbBrand[]) ?? []).map((db) => mapBrand(db));
   }
 
   async getBrands(partnerId: string): Promise<Brand[]> {
@@ -257,7 +232,7 @@ export class PartnersService {
       .order("name");
 
     if (error) throw new BadRequestException(error.message);
-    return ((data as DbBrand[]) ?? []).map((db) => this.mapBrand(db));
+    return ((data as DbBrand[]) ?? []).map((db) => mapBrand(db));
   }
 
   async createBrand(
@@ -283,7 +258,7 @@ export class PartnersService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapBrand(data as DbBrand);
+    return mapBrand(data as DbBrand);
   }
 
   async updateBrand(brandId: string, input: UpdateBrandInput): Promise<Brand> {
@@ -303,6 +278,6 @@ export class PartnersService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapBrand(data as DbBrand);
+    return mapBrand(data as DbBrand);
   }
 }
