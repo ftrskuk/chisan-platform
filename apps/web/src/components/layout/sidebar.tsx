@@ -14,6 +14,9 @@ import {
   Boxes,
   PackagePlus,
   PackageMinus,
+  ClipboardList,
+  ClipboardCheck,
+  Truck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +61,27 @@ const navigation: NavEntry[] = [
         href: "/master/items",
         label: "품목 관리",
         icon: <Package className="h-[18px] w-[18px]" />,
+      },
+    ],
+  },
+  {
+    title: "주문 관리",
+    items: [
+      {
+        href: "/orders",
+        label: "주문 목록",
+        icon: <ClipboardList className="h-[18px] w-[18px]" />,
+      },
+      {
+        href: "/orders/approval",
+        label: "승인 대기",
+        icon: <ClipboardCheck className="h-[18px] w-[18px]" />,
+        roles: ["admin", "manager"],
+      },
+      {
+        href: "/orders/field",
+        label: "현장 작업",
+        icon: <Truck className="h-[18px] w-[18px]" />,
       },
     ],
   },

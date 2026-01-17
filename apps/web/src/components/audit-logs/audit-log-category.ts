@@ -7,6 +7,7 @@ export type AuditCategoryVariant =
   | "master_data"
   | "import"
   | "production"
+  | "orders"
   | "settings";
 
 export const categoryVariantMap: Record<AuditCategory, AuditCategoryVariant> = {
@@ -16,5 +17,6 @@ export const categoryVariantMap: Record<AuditCategory, AuditCategoryVariant> = {
   master_data: "master_data",
   import: "import",
   production: "production",
+  orders: "orders",
   settings: "settings",
 };

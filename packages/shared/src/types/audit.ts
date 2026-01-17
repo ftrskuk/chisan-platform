@@ -5,6 +5,7 @@ export const AUDIT_CATEGORIES = [
   "master_data",
   "import",
   "production",
+  "orders",
   "settings",
 ] as const;
 export type AuditCategory = (typeof AUDIT_CATEGORIES)[number];
@@ -50,6 +51,16 @@ export const AUDIT_ACTIONS = {
     "order_created",
     "order_status_changed",
     "job_completed",
+  ] as const,
+  orders: [
+    "order_created",
+    "order_updated",
+    "order_cancelled",
+    "order_field_started",
+    "order_field_completed",
+    "order_approved",
+    "order_rejected",
+    "order_urgent_approved",
   ] as const,
   settings: ["setting_changed"] as const,
 } as const;

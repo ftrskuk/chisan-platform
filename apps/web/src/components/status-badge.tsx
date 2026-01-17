@@ -19,6 +19,7 @@ type StatusVariant =
   | "master_data"
   | "import"
   | "production"
+  | "orders"
   | "settings"
   | "parent"
   | "slitted"
@@ -99,6 +100,10 @@ const variantConfig: Record<
   production: {
     label: "생산",
     dotColor: "bg-orange-500",
+  },
+  orders: {
+    label: "주문",
+    dotColor: "bg-cyan-500",
   },
   settings: {
     label: "설정",
