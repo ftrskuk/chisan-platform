@@ -3,25 +3,9 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table";
 import { OrderStatusBadge } from "./order-status-badge";
-import type { OrderWithRelations, OrderType } from "@repo/shared";
+import type { OrderWithRelations } from "@repo/shared";
 import { Badge } from "@/components/ui/badge";
-
-const typeLabels: Record<OrderType, string> = {
-  stock_in: "입고",
-  stock_out: "출고",
-};
-
-const reasonLabels: Record<string, string> = {
-  container: "컨테이너 수입",
-  domestic_purchase: "국내 구매",
-  warehouse_transfer: "창고 이동",
-  return: "반품",
-  adjustment: "재고 조정",
-  sales: "판매",
-  sample: "샘플",
-  slitting: "슬리팅",
-  loss: "손실/폐기",
-};
+import { typeLabels, reasonLabels } from "@/lib/constants/order-labels";
 
 export function orderColumns(): ColumnDef<OrderWithRelations>[] {
   return [
