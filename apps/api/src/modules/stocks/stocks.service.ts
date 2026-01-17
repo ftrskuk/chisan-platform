@@ -25,6 +25,10 @@ import type {
   StockInResult,
   BulkStockInInput,
   BulkStockInResult,
+  CreateStockOutInput,
+  StockOutResult,
+  BulkStockOutInput,
+  BulkStockOutResult,
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
@@ -161,6 +165,25 @@ const BulkStockInRpcResultSchema = z.object({
       weightKg: z.number(),
       quantity: z.number(),
       condition: z.string(),
+    }),
+  ),
+});
+
+const BulkStockOutRpcResultSchema = z.object({
+  success: z.boolean(),
+  count: z.number(),
+  outNumber: z.string(),
+  results: z.array(
+    z.object({
+      stockId: z.string().uuid(),
+      movementId: z.string().uuid(),
+      outNumber: z.string(),
+      itemId: z.string().uuid(),
+      locationId: z.string().uuid(),
+      quantityOut: z.number(),
+      weightOutKg: z.number().nullable(),
+      quantityRemaining: z.number(),
+      weightRemainingKg: z.number().nullable(),
     }),
   ),
 });
@@ -700,5 +723,116 @@ export class StocksService {
     }
 
     return (data as DbStockMovement[]).map((db) => this.mapMovement(db));
+  }
+
+  async stockOut(
+    input: CreateStockOutInput,
+    performedBy: string,
+  ): Promise<StockOutResult> {
+    const bulkResult = await this.bulkStockOut({ items: [input] }, performedBy);
+
+    if (bulkResult.failureCount > 0) {
+      throw new BadRequestException(
+        bulkResult.failures[0]?.error ?? "Stock-out failed",
+      );
+    }
+
+    const result = bulkResult.results[0];
+    if (!result) {
+      throw new BadRequestException("Stock-out failed: no result returned");
+    }
+
+    return result;
+  }
+
+  async bulkStockOut(
+    input: BulkStockOutInput,
+    performedBy: string,
+  ): Promise<BulkStockOutResult> {
+    const client = this.supabaseService.getServiceClient();
+
+    const rpcItems = input.items.map((item) => ({
+      stock_id: item.stockId,
+      quantity: item.quantity ?? null,
+      weight_kg: item.weightKg ?? null,
+      reason_type: item.reasonType,
+      reason: item.reason ?? null,
+      reference_id: item.referenceId ?? null,
+      notes: item.notes ?? null,
+    }));
+
+    const { data, error } = await client.rpc("bulk_stock_out", {
+      items: rpcItems,
+      performed_by: performedBy,
+    });
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    const parseResult = BulkStockOutRpcResultSchema.safeParse(data);
+    if (!parseResult.success) {
+      throw new BadRequestException(
+        `Invalid RPC response: ${parseResult.error.message}`,
+      );
+    }
+
+    const rpcResult = parseResult.data;
+
+    if (!rpcResult.success) {
+      throw new BadRequestException(
+        "Bulk stock-out RPC returned success=false",
+      );
+    }
+
+    const stockIds = rpcResult.results.map((r) => r.stockId);
+    const movementIds = rpcResult.results.map((r) => r.movementId);
+
+    const [stocksData, movementsData] = await Promise.all([
+      this.findManyByIds(stockIds),
+      this.getMovementsByIds(movementIds),
+    ]);
+
+    const stocksMap = new Map(stocksData.map((s) => [s.id, s]));
+    const movementsMap = new Map(movementsData.map((m) => [m.id, m]));
+
+    const results: StockOutResult[] = rpcResult.results.map((r) => {
+      const stock = stocksMap.get(r.stockId);
+      const movement = movementsMap.get(r.movementId);
+
+      if (!stock) {
+        throw new NotFoundException(`Stock with ID ${r.stockId} not found`);
+      }
+      if (!movement) {
+        throw new NotFoundException(
+          `Movement with ID ${r.movementId} not found`,
+        );
+      }
+
+      return {
+        stock,
+        movement,
+      };
+    });
+
+    await this.auditService.log({
+      action: "stock_out",
+      category: "inventory",
+      targetTable: "stocks",
+      targetId: undefined,
+      metadata: {
+        bulkOperation: true,
+        itemCount: rpcResult.count,
+        outNumber: rpcResult.outNumber,
+        stockIds: rpcResult.results.map((r) => r.stockId),
+      },
+    });
+
+    return {
+      results,
+      successCount: rpcResult.count,
+      failureCount: 0,
+      failures: [],
+    };
   }
 }

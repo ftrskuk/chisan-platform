@@ -28,6 +28,7 @@ export const MOVEMENT_REFERENCE_TYPES = [
   "sale",
   "adjustment",
   "transfer",
+  "disposal",
 ] as const;
 export type MovementReferenceType = (typeof MOVEMENT_REFERENCE_TYPES)[number];
 
@@ -125,4 +126,44 @@ export interface BulkStockInResult {
   successCount: number;
   failureCount: number;
   failures: BulkStockInFailure[];
+}
+
+export const STOCK_OUT_REASON_TYPES = [
+  "sale",
+  "production",
+  "adjustment",
+  "disposal",
+  "transfer",
+] as const;
+export type StockOutReasonType = (typeof STOCK_OUT_REASON_TYPES)[number];
+
+export interface CreateStockOutInput {
+  stockId: string;
+  quantity?: number;
+  weightKg?: number;
+  reasonType: StockOutReasonType;
+  reason?: string;
+  referenceId?: string;
+  notes?: string;
+}
+
+export interface StockOutResult {
+  stock: StockWithRelations;
+  movement: StockMovement;
+}
+
+export interface BulkStockOutInput {
+  items: CreateStockOutInput[];
+}
+
+export interface BulkStockOutFailure {
+  input: CreateStockOutInput;
+  error: string;
+}
+
+export interface BulkStockOutResult {
+  results: StockOutResult[];
+  successCount: number;
+  failureCount: number;
+  failures: BulkStockOutFailure[];
 }

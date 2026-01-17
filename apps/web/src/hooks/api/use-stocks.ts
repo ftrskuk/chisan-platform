@@ -8,6 +8,10 @@ import type {
   StockInResult,
   BulkStockInInput,
   BulkStockInResult,
+  CreateStockOutInput,
+  StockOutResult,
+  BulkStockOutInput,
+  BulkStockOutResult,
 } from "@repo/shared";
 
 const STOCKS_KEY = ["stocks"];
@@ -58,6 +62,30 @@ export function useBulkStockIn() {
   return useMutation({
     mutationFn: (data: BulkStockInInput) =>
       api.post<BulkStockInResult>("/api/v1/stocks/in/bulk", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STOCKS_KEY });
+    },
+  });
+}
+
+export function useCreateStockOut() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateStockOutInput) =>
+      api.post<StockOutResult>("/api/v1/stocks/out", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STOCKS_KEY });
+    },
+  });
+}
+
+export function useBulkStockOut() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: BulkStockOutInput) =>
+      api.post<BulkStockOutResult>("/api/v1/stocks/out/bulk", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: STOCKS_KEY });
     },

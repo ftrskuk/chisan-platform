@@ -13,6 +13,7 @@ import {
   UserCog,
   Boxes,
   PackagePlus,
+  PackageMinus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,6 +73,11 @@ const navigation: NavEntry[] = [
         href: "/inventory/stock-in",
         label: "재고 입고",
         icon: <PackagePlus className="h-[18px] w-[18px]" />,
+      },
+      {
+        href: "/inventory/stock-out",
+        label: "재고 출고",
+        icon: <PackageMinus className="h-[18px] w-[18px]" />,
       },
     ],
   },

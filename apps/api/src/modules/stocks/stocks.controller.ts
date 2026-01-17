@@ -12,11 +12,15 @@ import {
   stockSearchSchema,
   createStockInSchema,
   bulkStockInSchema,
+  createStockOutSchema,
+  bulkStockOutSchema,
 } from "@repo/shared";
 import type {
   StockSearchInput,
   CreateStockInInput,
   BulkStockInInput,
+  CreateStockOutInput,
+  BulkStockOutInput,
 } from "@repo/shared";
 import { JwtAuthGuard } from "../../core/auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../../core/auth/guards/roles.guard";
@@ -59,5 +63,24 @@ export class StocksController {
     @CurrentUser() user: RequestUser,
   ) {
     return this.stocksService.bulkStockIn(input, user.id);
+  }
+
+  @Post("out")
+  @Roles("admin", "manager")
+  stockOut(
+    @Body(new ZodValidationPipe(createStockOutSchema))
+    input: CreateStockOutInput,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.stocksService.stockOut(input, user.id);
+  }
+
+  @Post("out/bulk")
+  @Roles("admin", "manager")
+  bulkStockOut(
+    @Body(new ZodValidationPipe(bulkStockOutSchema)) input: BulkStockOutInput,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.stocksService.bulkStockOut(input, user.id);
   }
 }

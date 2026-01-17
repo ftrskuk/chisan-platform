@@ -44,3 +44,25 @@ export const createStockInSchema = z.object({
 export const bulkStockInSchema = z.object({
   items: z.array(createStockInSchema).min(1).max(50),
 });
+
+export const stockOutReasonTypeSchema = z.enum([
+  "sale",
+  "production",
+  "adjustment",
+  "disposal",
+  "transfer",
+]);
+
+export const createStockOutSchema = z.object({
+  stockId: z.string().uuid(),
+  quantity: z.coerce.number().int().positive().optional(),
+  weightKg: z.coerce.number().positive().optional(),
+  reasonType: stockOutReasonTypeSchema,
+  reason: z.string().max(200).optional(),
+  referenceId: z.string().uuid().optional(),
+  notes: z.string().max(500).optional(),
+});
+
+export const bulkStockOutSchema = z.object({
+  items: z.array(createStockOutSchema).min(1).max(50),
+});
