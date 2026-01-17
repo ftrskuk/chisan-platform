@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import type { UserRole, UserWithRoles } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
+import { AuditService } from "../../core/audit/audit.service";
 
 interface DbUser {
   id: string;
@@ -23,7 +24,10 @@ interface DbUserRole {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly auditService: AuditService,
+  ) {}
 
   async findAll(): Promise<UserWithRoles[]> {
     const client = this.supabaseService.getServiceClient();
@@ -134,7 +138,7 @@ export class UsersService {
   ): Promise<UserWithRoles> {
     const client = this.supabaseService.getServiceClient();
 
-    await this.findOne(userId);
+    const user = await this.findOne(userId);
 
     const { error } = await client.from("user_roles").upsert(
       {
@@ -149,6 +153,14 @@ export class UsersService {
     if (error) {
       throw new BadRequestException(error.message);
     }
+
+    await this.auditService.log({
+      action: "role_assigned",
+      category: "user",
+      targetTable: "user_roles",
+      targetId: userId,
+      metadata: { role, userEmail: user.email, assignedBy },
+    });
 
     return this.findOne(userId);
   }
@@ -181,14 +193,44 @@ export class UsersService {
       throw new BadRequestException(error.message);
     }
 
+    await this.auditService.log({
+      action: "role_removed",
+      category: "user",
+      targetTable: "user_roles",
+      targetId: userId,
+      metadata: { role, userEmail: user.email },
+    });
+
     return this.findOne(userId);
   }
 
   async deactivate(userId: string): Promise<UserWithRoles> {
-    return this.update(userId, { isActive: false });
+    const user = await this.findOne(userId);
+    const result = await this.update(userId, { isActive: false });
+
+    await this.auditService.log({
+      action: "deactivated",
+      category: "user",
+      targetTable: "users",
+      targetId: userId,
+      metadata: { userEmail: user.email },
+    });
+
+    return result;
   }
 
   async reactivate(userId: string): Promise<UserWithRoles> {
-    return this.update(userId, { isActive: true });
+    const user = await this.findOne(userId);
+    const result = await this.update(userId, { isActive: true });
+
+    await this.auditService.log({
+      action: "reactivated",
+      category: "user",
+      targetTable: "users",
+      targetId: userId,
+      metadata: { userEmail: user.email },
+    });
+
+    return result;
   }
 }

@@ -13,6 +13,8 @@ import type {
   UpdateLocationInput,
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
+import { AuditService } from "../../core/audit/audit.service";
+import { buildAuditChanges } from "../../common/utils";
 
 interface DbWarehouse {
   id: string;
@@ -45,7 +47,10 @@ interface DbLocation {
 
 @Injectable()
 export class WarehousesService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly auditService: AuditService,
+  ) {}
 
   private mapWarehouse(db: DbWarehouse): Warehouse {
     return {
@@ -147,13 +152,37 @@ export class WarehousesService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapWarehouse(data as DbWarehouse);
+
+    const result = this.mapWarehouse(data as DbWarehouse);
+
+    await this.auditService.log({
+      action: "warehouse_created",
+      category: "master_data",
+      targetTable: "warehouses",
+      targetId: result.id,
+      metadata: {
+        code: result.code,
+        name: result.name,
+        city: result.city,
+        isDefault: result.isDefault,
+      },
+    });
+
+    return result;
   }
 
   async update(id: string, input: UpdateWarehouseInput): Promise<Warehouse> {
     const client = this.supabaseService.getServiceClient();
 
-    await this.findOne(id);
+    const { data: existing, error: fetchError } = await client
+      .from("warehouses")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !existing) {
+      throw new NotFoundException(`Warehouse with ID ${id} not found`);
+    }
 
     if (input.isDefault) {
       await client
@@ -184,7 +213,33 @@ export class WarehousesService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapWarehouse(data as DbWarehouse);
+
+    const result = this.mapWarehouse(data as DbWarehouse);
+
+    const existingRecord = existing as unknown as Record<string, unknown>;
+    const inputRecord = input as unknown as Record<string, unknown>;
+    const changes = buildAuditChanges(existingRecord, inputRecord, {
+      code: "code",
+      name: "name",
+      address: "address",
+      city: "city",
+      postalCode: "postal_code",
+      contactName: "contact_name",
+      contactPhone: "contact_phone",
+      isDefault: "is_default",
+      notes: "notes",
+    });
+
+    await this.auditService.log({
+      action: "warehouse_updated",
+      category: "master_data",
+      targetTable: "warehouses",
+      targetId: id,
+      changes: Object.keys(changes).length > 0 ? changes : undefined,
+      metadata: { updatedFields: Object.keys(updateData) },
+    });
+
+    return result;
   }
 
   async deactivate(id: string): Promise<Warehouse> {
@@ -198,7 +253,18 @@ export class WarehousesService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapWarehouse(data as DbWarehouse);
+
+    const result = this.mapWarehouse(data as DbWarehouse);
+
+    await this.auditService.log({
+      action: "warehouse_deactivated",
+      category: "master_data",
+      targetTable: "warehouses",
+      targetId: id,
+      metadata: { code: result.code, name: result.name },
+    });
+
+    return result;
   }
 
   async getLocations(warehouseId: string): Promise<Location[]> {
@@ -210,6 +276,7 @@ export class WarehousesService {
       .from("locations")
       .select("*")
       .eq("warehouse_id", warehouseId)
+      .eq("is_active", true)
       .order("type")
       .order("code");
 
@@ -223,7 +290,7 @@ export class WarehousesService {
   ): Promise<Location> {
     const client = this.supabaseService.getServiceClient();
 
-    await this.findOne(warehouseId);
+    const warehouse = await this.findOne(warehouseId);
 
     const { data, error } = await client
       .from("locations")
@@ -239,7 +306,24 @@ export class WarehousesService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapLocation(data as DbLocation);
+
+    const result = this.mapLocation(data as DbLocation);
+
+    await this.auditService.log({
+      action: "location_created",
+      category: "master_data",
+      targetTable: "locations",
+      targetId: result.id,
+      metadata: {
+        warehouseId,
+        warehouseName: warehouse.name,
+        code: result.code,
+        name: result.name,
+        type: result.type,
+      },
+    });
+
+    return result;
   }
 
   async updateLocation(
@@ -247,6 +331,16 @@ export class WarehousesService {
     input: UpdateLocationInput,
   ): Promise<Location> {
     const client = this.supabaseService.getServiceClient();
+
+    const { data: existing, error: fetchError } = await client
+      .from("locations")
+      .select("*")
+      .eq("id", locationId)
+      .single();
+
+    if (fetchError || !existing) {
+      throw new NotFoundException(`Location with ID ${locationId} not found`);
+    }
 
     const updateData: Record<string, unknown> = {};
     if (input.code !== undefined) updateData.code = input.code;
@@ -263,6 +357,28 @@ export class WarehousesService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapLocation(data as DbLocation);
+
+    const result = this.mapLocation(data as DbLocation);
+
+    const existingRecord = existing as unknown as Record<string, unknown>;
+    const inputRecord = input as unknown as Record<string, unknown>;
+    const changes = buildAuditChanges(existingRecord, inputRecord, {
+      code: "code",
+      name: "name",
+      type: "type",
+      parentId: "parent_id",
+      notes: "notes",
+    });
+
+    await this.auditService.log({
+      action: "location_updated",
+      category: "master_data",
+      targetTable: "locations",
+      targetId: locationId,
+      changes: Object.keys(changes).length > 0 ? changes : undefined,
+      metadata: { updatedFields: Object.keys(updateData) },
+    });
+
+    return result;
   }
 }

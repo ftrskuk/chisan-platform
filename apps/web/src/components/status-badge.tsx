@@ -16,6 +16,7 @@ type StatusVariant =
   | "auth"
   | "user"
   | "inventory"
+  | "master_data"
   | "import"
   | "production"
   | "settings"
@@ -86,6 +87,10 @@ const variantConfig: Record<
   inventory: {
     label: "재고",
     dotColor: "bg-emerald-500",
+  },
+  master_data: {
+    label: "마스터",
+    dotColor: "bg-indigo-500",
   },
   import: {
     label: "수입",

@@ -56,7 +56,7 @@ const sourceTypeLabels: Record<string, string> = {
 export function StockInForm({ onSuccess }: StockInFormProps) {
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("");
 
-  const { data: items } = useItems();
+  const { data: items } = useItems({ isActive: true });
   const { data: warehouses } = useWarehouses();
   const { data: locations } = useLocations(selectedWarehouseId);
   const createMutation = useCreateStockIn();
@@ -66,7 +66,7 @@ export function StockInForm({ onSuccess }: StockInFormProps) {
     defaultValues: {
       quantity: 1,
       widthMm: 1000,
-      weightKg: 0,
+      weightKg: 1,
       condition: "parent",
       sourceType: "import",
     },
@@ -78,6 +78,8 @@ export function StockInForm({ onSuccess }: StockInFormProps) {
       toast.success(
         `입고 처리가 완료되었습니다. (Batch: ${result.batchNumber})`,
       );
+      form.reset();
+      setSelectedWarehouseId("");
       onSuccess();
     } catch (error) {
       toast.error(
@@ -116,10 +118,7 @@ export function StockInForm({ onSuccess }: StockInFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>품목 선택 *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="입고할 품목을 선택하세요" />
@@ -171,7 +170,7 @@ export function StockInForm({ onSuccess }: StockInFormProps) {
                   <FormLabel>위치 선택 *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                     disabled={!selectedWarehouseId}
                   >
                     <FormControl>
@@ -206,7 +205,14 @@ export function StockInForm({ onSuccess }: StockInFormProps) {
                     <Input
                       type="number"
                       {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      value={field.value ?? ""}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === ""
+                            ? undefined
+                            : Number(e.target.value),
+                        )
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -225,7 +231,14 @@ export function StockInForm({ onSuccess }: StockInFormProps) {
                       type="number"
                       step="0.001"
                       {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      value={field.value ?? ""}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === ""
+                            ? undefined
+                            : Number(e.target.value),
+                        )
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -241,10 +254,7 @@ export function StockInForm({ onSuccess }: StockInFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>상태 *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="상태 선택" />
@@ -269,10 +279,7 @@ export function StockInForm({ onSuccess }: StockInFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>입고 유형 *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="유형 선택" />

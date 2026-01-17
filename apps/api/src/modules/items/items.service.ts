@@ -16,7 +16,9 @@ import type {
   ItemSearchInput,
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
+import { AuditService } from "../../core/audit/audit.service";
 import { type DbBrand, mapBrand } from "../../common/mappers";
+import { buildAuditChanges } from "../../common/utils";
 
 interface DbPaperType {
   id: string;
@@ -49,7 +51,10 @@ interface DbItem {
 
 @Injectable()
 export class ItemsService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly auditService: AuditService,
+  ) {}
 
   private mapPaperType(db: DbPaperType): PaperType {
     return {
@@ -114,7 +119,18 @@ export class ItemsService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapPaperType(data as DbPaperType);
+
+    const result = this.mapPaperType(data as DbPaperType);
+
+    await this.auditService.log({
+      action: "paper_type_created",
+      category: "master_data",
+      targetTable: "paper_types",
+      targetId: result.id,
+      metadata: { code: result.code, nameEn: result.nameEn },
+    });
+
+    return result;
   }
 
   async updatePaperType(
@@ -122,6 +138,16 @@ export class ItemsService {
     input: UpdatePaperTypeInput,
   ): Promise<PaperType> {
     const client = this.supabaseService.getServiceClient();
+
+    const { data: existing, error: fetchError } = await client
+      .from("paper_types")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !existing) {
+      throw new NotFoundException(`PaperType with ID ${id} not found`);
+    }
 
     const updateData: Record<string, unknown> = {};
     if (input.code !== undefined) updateData.code = input.code;
@@ -139,7 +165,29 @@ export class ItemsService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapPaperType(data as DbPaperType);
+
+    const result = this.mapPaperType(data as DbPaperType);
+
+    const existingRecord = existing as unknown as Record<string, unknown>;
+    const inputRecord = input as unknown as Record<string, unknown>;
+    const changes = buildAuditChanges(existingRecord, inputRecord, {
+      code: "code",
+      nameEn: "name_en",
+      nameKo: "name_ko",
+      description: "description",
+      sortOrder: "sort_order",
+    });
+
+    await this.auditService.log({
+      action: "paper_type_updated",
+      category: "master_data",
+      targetTable: "paper_types",
+      targetId: id,
+      changes: Object.keys(changes).length > 0 ? changes : undefined,
+      metadata: { updatedFields: Object.keys(updateData) },
+    });
+
+    return result;
   }
 
   async findAll(search?: ItemSearchInput): Promise<Item[]> {
@@ -241,13 +289,39 @@ export class ItemsService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapItem(data as DbItem);
+
+    const result = this.mapItem(data as DbItem);
+
+    await this.auditService.log({
+      action: "item_created",
+      category: "master_data",
+      targetTable: "items",
+      targetId: result.id,
+      metadata: {
+        itemCode: result.itemCode,
+        displayName: result.displayName,
+        paperTypeId: result.paperTypeId,
+        brandId: result.brandId,
+        grammage: result.grammage,
+        form: result.form,
+      },
+    });
+
+    return result;
   }
 
   async update(id: string, input: UpdateItemInput): Promise<Item> {
     const client = this.supabaseService.getServiceClient();
 
-    await this.findOne(id);
+    const { data: existing, error: fetchError } = await client
+      .from("items")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !existing) {
+      throw new NotFoundException(`Item with ID ${id} not found`);
+    }
 
     const updateData: Record<string, unknown> = {};
     if (input.itemCode !== undefined) updateData.item_code = input.itemCode;
@@ -275,7 +349,37 @@ export class ItemsService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapItem(data as DbItem);
+
+    const result = this.mapItem(data as DbItem);
+
+    const changes = buildAuditChanges(
+      existing as Record<string, unknown>,
+      input as Record<string, unknown>,
+      {
+        itemCode: "item_code",
+        displayName: "display_name",
+        paperTypeId: "paper_type_id",
+        brandId: "brand_id",
+        grammage: "grammage",
+        form: "form",
+        coreDiameterInch: "core_diameter_inch",
+        lengthMm: "length_mm",
+        sheetsPerReam: "sheets_per_ream",
+        unitOfMeasure: "unit_of_measure",
+        notes: "notes",
+      },
+    );
+
+    await this.auditService.log({
+      action: "item_updated",
+      category: "master_data",
+      targetTable: "items",
+      targetId: id,
+      changes: Object.keys(changes).length > 0 ? changes : undefined,
+      metadata: { updatedFields: Object.keys(updateData) },
+    });
+
+    return result;
   }
 
   async deactivate(id: string): Promise<Item> {
@@ -289,6 +393,17 @@ export class ItemsService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapItem(data as DbItem);
+
+    const result = this.mapItem(data as DbItem);
+
+    await this.auditService.log({
+      action: "item_deactivated",
+      category: "master_data",
+      targetTable: "items",
+      targetId: id,
+      metadata: { itemCode: result.itemCode, displayName: result.displayName },
+    });
+
+    return result;
   }
 }

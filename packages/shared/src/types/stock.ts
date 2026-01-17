@@ -115,27 +115,14 @@ export interface BulkStockInInput {
   items: CreateStockInInput[];
 }
 
+export interface BulkStockInFailure {
+  input: CreateStockInInput;
+  error: string;
+}
+
 export interface BulkStockInResult {
   results: StockInResult[];
   successCount: number;
   failureCount: number;
-}
-
-// Stock-In Response
-export interface StockInResult {
-  stock: StockWithRelations;
-  movement: StockMovement;
-  batchNumber: string;
-}
-
-// Bulk Stock-In Input
-export interface BulkStockInInput {
-  items: CreateStockInInput[];
-}
-
-// Bulk Stock-In Response
-export interface BulkStockInResult {
-  results: StockInResult[];
-  successCount: number;
-  failureCount: number;
+  failures: BulkStockInFailure[];
 }

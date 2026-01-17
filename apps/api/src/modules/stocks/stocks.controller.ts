@@ -7,7 +7,6 @@ import {
   Post,
   Query,
   UseGuards,
-  UsePipes,
 } from "@nestjs/common";
 import {
   stockSearchSchema,
@@ -46,16 +45,17 @@ export class StocksController {
 
   @Post("in")
   @Roles("admin", "manager")
-  @UsePipes(new ZodValidationPipe(createStockInSchema))
-  stockIn(@Body() input: CreateStockInInput, @CurrentUser() user: RequestUser) {
+  stockIn(
+    @Body(new ZodValidationPipe(createStockInSchema)) input: CreateStockInInput,
+    @CurrentUser() user: RequestUser,
+  ) {
     return this.stocksService.stockIn(input, user.id);
   }
 
   @Post("in/bulk")
   @Roles("admin", "manager")
-  @UsePipes(new ZodValidationPipe(bulkStockInSchema))
   bulkStockIn(
-    @Body() input: BulkStockInInput,
+    @Body(new ZodValidationPipe(bulkStockInSchema)) input: BulkStockInInput,
     @CurrentUser() user: RequestUser,
   ) {
     return this.stocksService.bulkStockIn(input, user.id);

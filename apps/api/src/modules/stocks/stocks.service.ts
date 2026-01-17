@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import { z } from "zod";
 import type {
   Stock,
   StockWithRelations,
@@ -26,6 +27,7 @@ import type {
   BulkStockInResult,
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
+import { AuditService } from "../../core/audit/audit.service";
 
 interface DbStock {
   id: string;
@@ -145,9 +147,30 @@ interface DbStockMovement {
   created_at: string;
 }
 
+const BulkStockInRpcResultSchema = z.object({
+  success: z.boolean(),
+  count: z.number(),
+  results: z.array(
+    z.object({
+      stockId: z.string().uuid(),
+      movementId: z.string().uuid(),
+      batchNumber: z.string(),
+      itemId: z.string().uuid(),
+      locationId: z.string().uuid(),
+      widthMm: z.number(),
+      weightKg: z.number(),
+      quantity: z.number(),
+      condition: z.string(),
+    }),
+  ),
+});
+
 @Injectable()
 export class StocksService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly auditService: AuditService,
+  ) {}
 
   private mapStock(db: DbStock): Stock {
     return {
@@ -427,8 +450,31 @@ export class StocksService {
   ): Promise<StockInResult> {
     const client = this.supabaseService.getServiceClient();
 
+    const { data: location, error: locationError } = await client
+      .from("locations")
+      .select("id")
+      .eq("id", input.locationId)
+      .eq("is_active", true)
+      .single();
+
+    if (locationError || !location) {
+      throw new BadRequestException("Invalid or inactive location.");
+    }
+
+    const { data: item, error: itemError } = await client
+      .from("items")
+      .select("id")
+      .eq("id", input.itemId)
+      .eq("is_active", true)
+      .single();
+
+    if (itemError || !item) {
+      throw new BadRequestException("Invalid or inactive item.");
+    }
+
     const batchNumber = await this.generateBatchNumber();
     const quantity = input.quantity ?? 1;
+    const weightValue = input.weightKg;
 
     const { data: stockData, error: stockError } = await client
       .from("stocks")
@@ -436,7 +482,7 @@ export class StocksService {
         item_id: input.itemId,
         location_id: input.locationId,
         width_mm: input.widthMm,
-        weight_kg: input.weightKg,
+        weight_kg: weightValue,
         quantity: quantity,
         condition: input.condition,
         status: "available",
@@ -458,11 +504,11 @@ export class StocksService {
         stock_id: stockData.id,
         movement_type: "in",
         quantity_change: quantity,
-        weight_change_kg: input.weightKg,
+        weight_change_kg: weightValue,
         quantity_before: 0,
         quantity_after: quantity,
         weight_before_kg: 0,
-        weight_after_kg: input.weightKg,
+        weight_after_kg: weightValue,
         reason: `Stock-in: ${input.sourceType}`,
         reference_type: input.sourceType,
         performed_by: performedBy,
@@ -473,6 +519,24 @@ export class StocksService {
     if (movementError) throw new BadRequestException(movementError.message);
 
     const stock = await this.findOne(stockData.id);
+
+    await this.auditService.log({
+      action: "stock_in",
+      category: "inventory",
+      targetTable: "stocks",
+      targetId: stockData.id,
+      metadata: {
+        batchNumber,
+        itemId: input.itemId,
+        locationId: input.locationId,
+        quantity,
+        weightKg: weightValue,
+        widthMm: input.widthMm,
+        condition: input.condition,
+        sourceType: input.sourceType,
+        movementId: movementData.id,
+      },
+    });
 
     return {
       stock,
@@ -485,20 +549,156 @@ export class StocksService {
     input: BulkStockInInput,
     performedBy: string,
   ): Promise<BulkStockInResult> {
-    const results: StockInResult[] = [];
-    let successCount = 0;
-    let failureCount = 0;
+    const client = this.supabaseService.getServiceClient();
 
-    for (const item of input.items) {
-      try {
-        const result = await this.stockIn(item, performedBy);
-        results.push(result);
-        successCount++;
-      } catch {
-        failureCount++;
-      }
+    const rpcItems = input.items.map((item) => ({
+      item_id: item.itemId,
+      location_id: item.locationId,
+      width_mm: item.widthMm,
+      weight_kg: item.weightKg,
+      quantity: item.quantity ?? 1,
+      condition: item.condition,
+      source_type: item.sourceType,
+      lot_number: item.lotNumber ?? null,
+      notes: item.notes ?? null,
+    }));
+
+    const { data, error } = await client.rpc("bulk_stock_in", {
+      items: rpcItems,
+      performed_by: performedBy,
+    });
+
+    if (error) {
+      throw new BadRequestException(error.message);
     }
 
-    return { results, successCount, failureCount };
+    const parseResult = BulkStockInRpcResultSchema.safeParse(data);
+    if (!parseResult.success) {
+      throw new BadRequestException(
+        `Invalid RPC response: ${parseResult.error.message}`,
+      );
+    }
+
+    const rpcResult = parseResult.data;
+
+    if (!rpcResult.success) {
+      throw new BadRequestException("Bulk stock-in RPC returned success=false");
+    }
+
+    const stockIds = rpcResult.results.map((r) => r.stockId);
+    const movementIds = rpcResult.results.map((r) => r.movementId);
+
+    const [stocksData, movementsData] = await Promise.all([
+      this.findManyByIds(stockIds),
+      this.getMovementsByIds(movementIds),
+    ]);
+
+    const stocksMap = new Map(stocksData.map((s) => [s.id, s]));
+    const movementsMap = new Map(movementsData.map((m) => [m.id, m]));
+
+    const results: StockInResult[] = rpcResult.results.map((r) => {
+      const stock = stocksMap.get(r.stockId);
+      const movement = movementsMap.get(r.movementId);
+
+      if (!stock) {
+        throw new NotFoundException(`Stock with ID ${r.stockId} not found`);
+      }
+      if (!movement) {
+        throw new NotFoundException(
+          `Movement with ID ${r.movementId} not found`,
+        );
+      }
+
+      return {
+        stock,
+        movement,
+        batchNumber: r.batchNumber,
+      };
+    });
+
+    await this.auditService.log({
+      action: "stock_in",
+      category: "inventory",
+      targetTable: "stocks",
+      targetId: undefined,
+      metadata: {
+        bulkOperation: true,
+        itemCount: rpcResult.count,
+        stockIds: rpcResult.results.map((r) => r.stockId),
+        batchNumbers: rpcResult.results.map((r) => r.batchNumber),
+      },
+    });
+
+    return {
+      results,
+      successCount: rpcResult.count,
+      failureCount: 0,
+      failures: [],
+    };
+  }
+
+  private async getMovement(movementId: string): Promise<StockMovement> {
+    const client = this.supabaseService.getServiceClient();
+
+    const { data, error } = await client
+      .from("stock_movements")
+      .select("*")
+      .eq("id", movementId)
+      .single();
+
+    if (error || !data) {
+      throw new NotFoundException(`Movement with ID ${movementId} not found`);
+    }
+
+    return this.mapMovement(data as DbStockMovement);
+  }
+
+  private async findManyByIds(ids: string[]): Promise<StockWithRelations[]> {
+    if (ids.length === 0) return [];
+
+    const client = this.supabaseService.getServiceClient();
+
+    const { data, error } = await client
+      .from("stocks")
+      .select(
+        `
+        *,
+        items!inner (
+          *,
+          paper_types (*),
+          brands (*)
+        ),
+        locations!inner (
+          *,
+          warehouses (*)
+        )
+      `,
+      )
+      .in("id", ids);
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    return (data as DbStockWithRelations[]).map((db) =>
+      this.mapStockWithRelations(db),
+    );
+  }
+
+  private async getMovementsByIds(ids: string[]): Promise<StockMovement[]> {
+    if (ids.length === 0) return [];
+
+    const client = this.supabaseService.getServiceClient();
+
+    const { data, error } = await client
+      .from("stock_movements")
+      .select("*")
+      .in("id", ids);
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    return (data as DbStockMovement[]).map((db) => this.mapMovement(db));
   }
 }

@@ -3,19 +3,8 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table";
 import { StatusBadge } from "@/components/status-badge";
-import type { AuditLog, AuditCategory } from "@repo/shared";
-
-const categoryVariantMap: Record<
-  AuditCategory,
-  "auth" | "user" | "inventory" | "import" | "production" | "settings"
-> = {
-  auth: "auth",
-  user: "user",
-  inventory: "inventory",
-  import: "import",
-  production: "production",
-  settings: "settings",
-};
+import type { AuditLog } from "@repo/shared";
+import { categoryVariantMap } from "./audit-log-category";
 
 export const auditLogColumns: ColumnDef<AuditLog>[] = [
   {

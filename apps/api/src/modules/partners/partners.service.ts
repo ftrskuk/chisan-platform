@@ -14,7 +14,9 @@ import type {
   UpdateBrandInput,
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
+import { AuditService } from "../../core/audit/audit.service";
 import { type DbBrand, mapBrand } from "../../common/mappers";
+import { buildAuditChanges } from "../../common/utils";
 
 interface DbPartner {
   id: string;
@@ -42,7 +44,10 @@ interface DbPartner {
 
 @Injectable()
 export class PartnersService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly auditService: AuditService,
+  ) {}
 
   private mapPartner(db: DbPartner): Partner {
     return {
@@ -144,13 +149,37 @@ export class PartnersService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapPartner(data as DbPartner);
+
+    const result = this.mapPartner(data as DbPartner);
+
+    await this.auditService.log({
+      action: "partner_created",
+      category: "master_data",
+      targetTable: "partners",
+      targetId: result.id,
+      metadata: {
+        partnerCode: result.partnerCode,
+        name: result.name,
+        partnerType: result.partnerType,
+        countryCode: result.countryCode,
+      },
+    });
+
+    return result;
   }
 
   async update(id: string, input: UpdatePartnerInput): Promise<Partner> {
     const client = this.supabaseService.getServiceClient();
 
-    await this.findOne(id);
+    const { data: existing, error: fetchError } = await client
+      .from("partners")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !existing) {
+      throw new NotFoundException(`Partner with ID ${id} not found`);
+    }
 
     const updateData: Record<string, unknown> = {};
     if (input.partnerCode !== undefined)
@@ -191,7 +220,41 @@ export class PartnersService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapPartner(data as DbPartner);
+
+    const result = this.mapPartner(data as DbPartner);
+
+    const existingRecord = existing as unknown as Record<string, unknown>;
+    const inputRecord = input as unknown as Record<string, unknown>;
+    const changes = buildAuditChanges(existingRecord, inputRecord, {
+      partnerCode: "partner_code",
+      name: "name",
+      nameLocal: "name_local",
+      partnerType: "partner_type",
+      countryCode: "country_code",
+      address: "address",
+      city: "city",
+      contactName: "contact_name",
+      contactEmail: "contact_email",
+      contactPhone: "contact_phone",
+      supplierCurrency: "supplier_currency",
+      supplierPaymentTerms: "supplier_payment_terms",
+      leadTimeDays: "lead_time_days",
+      customerCurrency: "customer_currency",
+      customerPaymentTerms: "customer_payment_terms",
+      creditLimit: "credit_limit",
+      notes: "notes",
+    });
+
+    await this.auditService.log({
+      action: "partner_updated",
+      category: "master_data",
+      targetTable: "partners",
+      targetId: id,
+      changes: Object.keys(changes).length > 0 ? changes : undefined,
+      metadata: { updatedFields: Object.keys(updateData) },
+    });
+
+    return result;
   }
 
   async deactivate(id: string): Promise<Partner> {
@@ -205,7 +268,18 @@ export class PartnersService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return this.mapPartner(data as DbPartner);
+
+    const result = this.mapPartner(data as DbPartner);
+
+    await this.auditService.log({
+      action: "partner_deactivated",
+      category: "master_data",
+      targetTable: "partners",
+      targetId: id,
+      metadata: { partnerCode: result.partnerCode, name: result.name },
+    });
+
+    return result;
   }
 
   async getAllBrands(): Promise<Brand[]> {
@@ -258,11 +332,37 @@ export class PartnersService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return mapBrand(data as DbBrand);
+
+    const result = mapBrand(data as DbBrand);
+
+    await this.auditService.log({
+      action: "brand_created",
+      category: "master_data",
+      targetTable: "brands",
+      targetId: result.id,
+      metadata: {
+        partnerId,
+        partnerName: partner.name,
+        code: result.code,
+        name: result.name,
+      },
+    });
+
+    return result;
   }
 
   async updateBrand(brandId: string, input: UpdateBrandInput): Promise<Brand> {
     const client = this.supabaseService.getServiceClient();
+
+    const { data: existing, error: fetchError } = await client
+      .from("brands")
+      .select("*")
+      .eq("id", brandId)
+      .single();
+
+    if (fetchError || !existing) {
+      throw new NotFoundException(`Brand with ID ${brandId} not found`);
+    }
 
     const updateData: Record<string, unknown> = {};
     if (input.code !== undefined) updateData.code = input.code;
@@ -278,6 +378,26 @@ export class PartnersService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
-    return mapBrand(data as DbBrand);
+
+    const result = mapBrand(data as DbBrand);
+
+    const existingRecord = existing as unknown as Record<string, unknown>;
+    const inputRecord = input as unknown as Record<string, unknown>;
+    const changes = buildAuditChanges(existingRecord, inputRecord, {
+      code: "code",
+      name: "name",
+      description: "description",
+    });
+
+    await this.auditService.log({
+      action: "brand_updated",
+      category: "master_data",
+      targetTable: "brands",
+      targetId: brandId,
+      changes: Object.keys(changes).length > 0 ? changes : undefined,
+      metadata: { updatedFields: Object.keys(updateData) },
+    });
+
+    return result;
   }
 }

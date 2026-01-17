@@ -32,11 +32,14 @@ export const updateItemSchema = createItemSchema.partial();
 export const itemSearchSchema = z.object({
   paperTypeId: z.string().uuid().optional(),
   brandId: z.string().uuid().optional(),
-  grammage: z.number().int().optional(),
-  grammageMin: z.number().int().optional(),
-  grammageMax: z.number().int().optional(),
+  grammage: z.coerce.number().int().optional(),
+  grammageMin: z.coerce.number().int().optional(),
+  grammageMax: z.coerce.number().int().optional(),
   form: itemFormSchema.optional(),
-  isActive: z.boolean().optional(),
+  isActive: z
+    .enum(["true", "false"])
+    .transform((val) => val === "true")
+    .optional(),
   q: z.string().optional(),
 });
 

@@ -33,6 +33,23 @@ interface AuditLogQuery {
   offset?: number;
 }
 
+interface DbAuditLog {
+  id: string;
+  actor_id: string;
+  actor_email: string;
+  actor_role: string;
+  action: string;
+  category: string;
+  target_table: string | null;
+  target_id: string | null;
+  changes: Record<string, { old: unknown; new: unknown }> | null;
+  metadata: Record<string, unknown> | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  request_id: string | null;
+  created_at: string;
+}
+
 @Injectable({ scope: Scope.REQUEST })
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
@@ -41,6 +58,25 @@ export class AuditService {
     private readonly supabaseService: SupabaseService,
     @Inject(REQUEST) private readonly request: Request,
   ) {}
+
+  private mapAuditLog(db: DbAuditLog) {
+    return {
+      id: db.id,
+      actorId: db.actor_id,
+      actorEmail: db.actor_email,
+      actorRole: db.actor_role,
+      action: db.action,
+      category: db.category,
+      targetTable: db.target_table,
+      targetId: db.target_id,
+      changes: db.changes,
+      metadata: db.metadata,
+      ipAddress: db.ip_address,
+      userAgent: db.user_agent,
+      requestId: db.request_id,
+      createdAt: db.created_at,
+    };
+  }
 
   async log(params: AuditLogParams): Promise<void> {
     const user = (this.request as Request & { user?: RequestUser }).user;
@@ -112,7 +148,8 @@ export class AuditService {
     }
 
     return {
-      data: data ?? [],
+      data:
+        (data as DbAuditLog[] | null)?.map((db) => this.mapAuditLog(db)) ?? [],
       total: count ?? 0,
       limit,
       offset,
@@ -132,7 +169,7 @@ export class AuditService {
       throw new NotFoundException(`Audit log not found: ${error.message}`);
     }
 
-    return data;
+    return this.mapAuditLog(data as DbAuditLog);
   }
 
   private getClientIp(): string | undefined {
