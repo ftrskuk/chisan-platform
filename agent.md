@@ -1,27 +1,27 @@
 # CHISAN Platform - AI Agent Guidelines
 
 > Context document for AI agents working on this project
+> **Last Updated**: 2026-01-17
 
-## Agent Behavior Rules
+## Quick Start for AI Agents
 
-| Rule              | Description                                           |
-| ----------------- | ----------------------------------------------------- |
-| **Language**      | All responses MUST be in English                      |
-| **Code Comments** | Business logic comments may be in Korean              |
-| **Documentation** | Follow existing document language (Korean or English) |
+```
+1. Read this file first
+2. Check docs/04-feature-map/ for feature dependencies
+3. Use LSP tools and grep for code exploration
+```
 
 ## Project Overview
 
-**CHISAN Platform** is the integrated business platform for CHISAN Paper.
+**CHISAN Platform** is an ERP system for CHISAN Paper company.
 
-- **Company**: CHISAN Paper
-- **Business**: Paper import, warehouse management, distribution, slitting (cutting) processing
-- **Products**: Roll paper 80%, Sheet 20%
-- **Users**: 6 internal staff → 20 (within 2 years)
+| Item     | Value                                           |
+| -------- | ----------------------------------------------- |
+| Business | Paper import, warehouse, distribution, slitting |
+| Products | Roll paper 80%, Sheet 20%                       |
+| Users    | 6 staff → 20 (within 2 years)                   |
 
-## Architecture
-
-### Tech Stack
+## Tech Stack
 
 | Layer    | Technology                   |
 | -------- | ---------------------------- |
@@ -29,187 +29,130 @@
 | Frontend | Next.js 15 (App Router)      |
 | Database | Supabase PostgreSQL          |
 | Auth     | Supabase Auth (Google OAuth) |
-| Storage  | Cloudflare R2                |
 | Monorepo | Turborepo + pnpm             |
-| Testing  | Vitest, Playwright           |
 | UI       | shadcn/ui, Tailwind CSS v4   |
 
-### Monorepo Structure
+## Project Structure
 
 ```
 chisan-platform/
 ├── apps/
-│   ├── api/              # NestJS backend
-│   │   ├── src/
-│   │   │   ├── core/     # Database, Auth, Config modules
-│   │   │   ├── modules/  # Feature modules (inventory, import, production)
-│   │   │   └── main.ts
-│   │   └── nest-cli.json
-│   └── web/              # Next.js frontend
-│       ├── app/          # App Router pages
-│       ├── components/   # UI components
-│       └── lib/          # Utilities
+│   ├── api/                 # NestJS backend
+│   │   └── src/modules/     # Feature modules
+│   └── web/                 # Next.js frontend
+│       ├── app/(dashboard)/ # Protected pages
+│       └── components/      # UI components
 ├── packages/
-│   └── shared/           # Shared types, validators (Zod)
+│   └── shared/              # Shared types & Zod schemas
 │       ├── types/
-│       └── validators/
-├── docs/                 # Documentation (you are here)
-├── turbo.json
-└── pnpm-workspace.yaml
+│       └── schemas/
+└── supabase/
+    └── migrations/          # DB migrations (00001~00016)
 ```
 
-### Module Priority (Development Order)
+## Current Implementation Status
 
-1. **Phase 1 - CORE**:
-   - `inventory` - Inventory Management WMS (Highest Priority)
-   - `import` - Import/Order Management
-   - `production` - Slitting Production Management
+### Completed Features
 
-2. **Phase 2**:
-   - `tds` - Technical Data Sheet (TDS) Management
+| Feature ID | Name           | Description                                                 |
+| ---------- | -------------- | ----------------------------------------------------------- |
+| AUTH       | Authentication | Google OAuth, JWT, Role-based access                        |
+| INV-F001   | Master Data    | Warehouses, Locations, Partners, Brands, Items, Paper Types |
+| INV-F002   | Stock Inquiry  | Stock list with search/filter                               |
+| INV-F003   | Stock-In       | Single & bulk stock-in with atomic RPC                      |
+| INV-F004   | Stock-Out      | Single & bulk stock-out with atomic RPC                     |
 
-3. **Future**:
-   - `approval` - Approval System
-   - `sales` - Sales/Order Management
-   - `wiki` - Internal Wiki
-   - `analytics` - Analytics/Reporting
+### Database Tables
 
-## Domain Context
+| Table           | Description                                    |
+| --------------- | ---------------------------------------------- |
+| users           | User accounts (synced from Supabase Auth)      |
+| user_roles      | User role assignments (admin, manager, viewer) |
+| audit_logs      | All system audit trails                        |
+| settings        | System settings (key-value)                    |
+| warehouses      | Warehouse master                               |
+| locations       | Warehouse locations (zones, racks)             |
+| partners        | Suppliers & customers                          |
+| brands          | Product brands (belongs to partner)            |
+| paper_types     | Paper type master (Art, Ivory, etc.)           |
+| items           | Product items (paper specifications)           |
+| stocks          | Inventory records                              |
+| stock_movements | Inventory movement history                     |
 
-### Key Domain Terms
+### API Endpoints (all under `/api/v1/`)
 
-| Korean | English     | Description                                        |
-| ------ | ----------- | -------------------------------------------------- |
-| 원지   | Parent Roll | Large roll before slitting                         |
-| 슬리팅 | Slitting    | Process of cutting parent rolls into smaller rolls |
-| 입고   | Stock-In    | Inventory incoming                                 |
-| 출고   | Stock-Out   | Inventory outgoing                                 |
-| 발주   | Order/PO    | Purchase Order                                     |
-| 거래처 | Partner     | Supplier or Customer                               |
-| 평량   | Grammage    | Paper weight (g/m²)                                |
-| 지폭   | Width       | Roll/Sheet width (mm)                              |
-| 지름   | Diameter    | Roll diameter (mm)                                 |
+| Module      | Endpoints                                                           |
+| ----------- | ------------------------------------------------------------------- |
+| stocks      | GET /, GET /:id, POST /in, POST /in/bulk, POST /out, POST /out/bulk |
+| warehouses  | CRUD + GET /:id/locations, POST /:id/locations                      |
+| partners    | CRUD + GET /suppliers, GET /customers, GET /:id/brands              |
+| brands      | GET /, PATCH /:id                                                   |
+| items       | CRUD                                                                |
+| paper-types | GET /, POST, PATCH /:id                                             |
+| users       | GET /, GET /:id, PATCH /:id, roles management                       |
+| settings    | GET /, GET /:category, PATCH /:category/:key                        |
 
-### Business Flow
+## Domain Terms
 
-```
-[Importer] → Order(PO) → Shipment → Arrival/Customs → Stock-In
-                                                      ↓
-                                              [Warehouse - Parent Roll Inventory]
-                                                      ↓
-                                            Production Order
-                                                      ↓
-                                              Stock-Out → Slitting → Stock-In
-                                                      ↓
-                                          [Warehouse - Slitting Roll/Sheet Inventory]
-                                                      ↓
-                                              Stock-Out → [Customer]
-```
+| Korean | English     | Description                             |
+| ------ | ----------- | --------------------------------------- |
+| 원지   | Parent Roll | Large roll before slitting              |
+| 슬리팅 | Slitting    | Cutting parent rolls into smaller rolls |
+| 입고   | Stock-In    | Inventory incoming                      |
+| 출고   | Stock-Out   | Inventory outgoing                      |
+| 평량   | Grammage    | Paper weight (g/m²)                     |
+| 지폭   | Width       | Roll/Sheet width (mm)                   |
 
-## Development Methodology
+## Coding Rules
 
-### EvoDev (Feature-Driven Development)
+| Rule       | Description                                         |
+| ---------- | --------------------------------------------------- |
+| TypeScript | Strict mode, no `any`                               |
+| Validation | All API inputs use Zod schemas in `packages/shared` |
+| DB Naming  | snake_case (tables plural, columns singular)        |
+| Commits    | Conventional commits: `feat:`, `fix:`, `refactor:`  |
+| Comments   | Korean allowed for business logic only              |
 
-This project follows the **EvoDev** methodology:
+## RPC Functions (Supabase)
 
-1. **Feature Map (DAG)**: Model dependencies between Features as a DAG
-2. **Feature Specification**: Define Business/UI/Data flow for each Feature
-3. **Iterative Development**: Iterative development in DAG topology order
-4. **Multi-layer Context**: Hierarchical context of Business → Design → Implementation
+| Function                            | Description                              |
+| ----------------------------------- | ---------------------------------------- |
+| bulk_stock_in(items, performed_by)  | Atomic bulk stock-in with advisory lock  |
+| bulk_stock_out(items, performed_by) | Atomic bulk stock-out with advisory lock |
+| generate_batch_number()             | Generate SI-YYYYMMDD-NNN                 |
+| generate_stock_out_number()         | Generate SO-YYYYMMDD-NNN                 |
 
-### Feature ID Convention
+## Key Patterns
 
-```
-{MODULE}-F{NUMBER}-{SHORT_NAME}
+### Stock Operations
 
-Example:
-- INV-F001-WAREHOUSE_MGMT
-- IMP-F002-ORDER_MGMT
-- PROD-F003-SLITTING_JOB
-```
+- Single operations route through bulk RPC for consistency
+- Advisory locks prevent race conditions
+- All movements recorded in stock_movements table
+- Audit logs for all operations
 
-## Coding Guidelines
+### Frontend
 
-### Must Follow
+- DataTable component for all list views
+- FormSheet for create/edit forms
+- React Query for server state
+- Zod + react-hook-form for validation
 
-1. **TypeScript Strict Mode**: No `any` allowed
-2. **Zod Validation**: All API inputs validated with Zod schemas
-3. **Korean Comments**: Business logic comments allowed in Korean
-4. **English Code**: Variable names, function names, type names in English
-5. **Conventional Commits**: `feat:`, `fix:`, `docs:`, `refactor:`, etc.
+## Planned Features (Not Started)
 
-### File Naming
+| Feature           | Description                                        |
+| ----------------- | -------------------------------------------------- |
+| Approval Workflow | Order → Field Processing → Approval → Stock Change |
+| Import Management | Purchase orders, shipment tracking                 |
+| Production        | Slitting job management                            |
+| TDS               | Technical Data Sheet management                    |
 
-| Type      | Convention        | Example                     |
-| --------- | ----------------- | --------------------------- |
-| Component | PascalCase        | `InventoryTable.tsx`        |
-| Utility   | kebab-case        | `date-utils.ts`             |
-| Type      | kebab-case        | `inventory.types.ts`        |
-| Test      | `.test.ts` suffix | `inventory.service.test.ts` |
-
-### Database Naming
-
-- Tables: `snake_case`, plural (`inventory_items`)
-- Columns: `snake_case` (`created_at`, `item_name`)
-- Foreign Keys: `{table}_id` (`warehouse_id`)
-
-## Key Documentation
-
-Documents you must read before working:
-
-| Priority | Document               | Path                                             |
-| -------- | ---------------------- | ------------------------------------------------ |
-| HIGH     | Architecture Overview  | `docs/02-architecture/overview.md`               |
-| HIGH     | Data Access Boundaries | `docs/02-architecture/data-access-boundaries.md` |
-| HIGH     | State Transitions      | `docs/02-architecture/state-transitions.md`      |
-| HIGH     | Feature Map Overview   | `docs/04-feature-map/overview.md`                |
-| HIGH     | Domain Glossary        | `docs/references/domain-glossary.md`             |
-| MEDIUM   | Operations             | `docs/02-architecture/operations.md`             |
-| MEDIUM   | Coding Standards       | `docs/05-development/coding-standards.md`        |
-| MEDIUM   | Module Docs            | `docs/03-modules/{module}.md`                    |
-
-## Common Tasks
-
-### Adding a New Feature
-
-1. Check the Feature in Feature Map (`docs/04-feature-map/`)
-2. Check if dependency Features are completed
-3. Implement Backend API (`apps/api/src/modules/`)
-4. Implement Frontend UI (`apps/web/app/`)
-5. Write and run tests
-
-### Adding a New Module
-
-1. Copy `docs/03-modules/_template.md`
-2. Write module documentation
-3. Add Features to Feature Map
-4. Create Backend module: `apps/api/src/modules/{module}/`
-5. Create Frontend route: `apps/web/app/(dashboard)/{module}/`
-
-### Database Migration
+## Quick Commands
 
 ```bash
-# Using Supabase CLI
-pnpm supabase migration new {migration_name}
-pnpm supabase db push
+pnpm dev              # Start all apps
+pnpm build            # Build all
+pnpm dev --filter api # Backend only
+pnpm dev --filter web # Frontend only
+npx supabase db push  # Apply migrations
 ```
-
-## Project Status
-
-| Phase | Module                    | Status      |
-| ----- | ------------------------- | ----------- |
-| 1     | Foundation (Auth, Config) | Not Started |
-| 1     | Inventory                 | Not Started |
-| 1     | Import                    | Not Started |
-| 1     | Production                | Not Started |
-| 2     | TDS                       | Not Started |
-
-**Current Focus**: Setting up Turborepo monorepo structure, then starting Phase 1
-
-## Questions?
-
-If you cannot find the answer in the documents:
-
-1. Search `docs/` directory
-2. Check terms in `docs/references/domain-glossary.md`
-3. Check business context in `docs/01-overview/business-context.md`
