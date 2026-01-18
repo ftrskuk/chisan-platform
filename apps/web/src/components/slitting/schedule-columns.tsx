@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table";
 import { ScheduleStatusBadge } from "./schedule-status-badge";
@@ -13,7 +14,12 @@ export function scheduleColumns(): ColumnDef<SlittingScheduleWithStats>[] {
         <DataTableColumnHeader column={column} title="일정번호" />
       ),
       cell: ({ row }) => (
-        <span className="font-mono text-sm">{row.original.scheduleNumber}</span>
+        <Link
+          href={`/production/slitting/${row.original.id}`}
+          className="font-mono text-sm text-primary hover:underline"
+        >
+          {row.original.scheduleNumber}
+        </Link>
       ),
     },
     {
