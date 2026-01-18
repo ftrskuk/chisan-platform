@@ -8,7 +8,11 @@ import {
   Query,
   UseGuards,
 } from "@nestjs/common";
-import { machineSearchSchema, updateMachineStatusSchema } from "@repo/shared";
+import {
+  machineSearchSchema,
+  updateMachineStatusSchema,
+  ADMIN_MANAGER_ROLES,
+} from "@repo/shared";
 import type {
   MachineSearchInput,
   UpdateMachineStatusInput,
@@ -40,7 +44,7 @@ export class MachinesController {
   }
 
   @Patch(":id/status")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   updateStatus(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updateMachineStatusSchema))

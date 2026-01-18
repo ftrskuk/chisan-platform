@@ -33,7 +33,11 @@ import {
 import { Loader2, Play, CheckCircle, Package } from "lucide-react";
 import { toast } from "sonner";
 import type { OrderWithRelations, OrderItemWithRelations } from "@repo/shared";
-import { typeLabels, reasonLabels } from "@/lib/constants/order-labels";
+import {
+  typeLabels,
+  reasonLabels,
+  FIELD_QUEUE_DEFAULT_STATUSES,
+} from "@/lib/constants/order-labels";
 
 interface ProcessFormItem {
   orderItemId: string;
@@ -49,7 +53,7 @@ export default function FieldQueuePage() {
   const [processMemo, setProcessMemo] = useState("");
 
   const { data: ordersResponse, isLoading } = useOrders({
-    statuses: ["pending", "field_processing"],
+    statuses: FIELD_QUEUE_DEFAULT_STATUSES,
     limit: 50,
     offset: 0,
   });
@@ -68,12 +72,12 @@ export default function FieldQueuePage() {
   );
 
   const pendingOrders = useMemo(
-    () => orders.filter((o) => o.status === "pending"),
+    () => orders.filter((o) => o.status === FIELD_QUEUE_DEFAULT_STATUSES[0]),
     [orders],
   );
 
   const processingOrders = useMemo(
-    () => orders.filter((o) => o.status === "field_processing"),
+    () => orders.filter((o) => o.status === FIELD_QUEUE_DEFAULT_STATUSES[1]),
     [orders],
   );
 
@@ -414,8 +418,8 @@ interface OrderCardProps {
 }
 
 function OrderCard({ order, onStart, onProcess, isStarting }: OrderCardProps) {
-  const isPending = order.status === "pending";
-  const isProcessing = order.status === "field_processing";
+  const isPending = order.status === FIELD_QUEUE_DEFAULT_STATUSES[0];
+  const isProcessing = order.status === FIELD_QUEUE_DEFAULT_STATUSES[1];
 
   return (
     <Card className="flex flex-col">

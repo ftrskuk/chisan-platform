@@ -17,6 +17,8 @@ import {
   createPaperTypeSchema,
   updatePaperTypeSchema,
   itemSearchSchema,
+  ADMIN_MANAGER_ROLES,
+  ADMIN_ONLY_ROLES,
 } from "@repo/shared";
 import type {
   CreateItemInput,
@@ -42,14 +44,14 @@ export class PaperTypesController {
   }
 
   @Post()
-  @Roles("admin")
+  @Roles(...ADMIN_ONLY_ROLES)
   @UsePipes(new ZodValidationPipe(createPaperTypeSchema))
   create(@Body() input: CreatePaperTypeInput) {
     return this.itemsService.createPaperType(input);
   }
 
   @Patch(":id")
-  @Roles("admin")
+  @Roles(...ADMIN_ONLY_ROLES)
   update(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updatePaperTypeSchema))
@@ -77,14 +79,14 @@ export class ItemsController {
   }
 
   @Post()
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   @UsePipes(new ZodValidationPipe(createItemSchema))
   create(@Body() input: CreateItemInput) {
     return this.itemsService.create(input);
   }
 
   @Patch(":id")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   update(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updateItemSchema)) input: UpdateItemInput,
@@ -93,7 +95,7 @@ export class ItemsController {
   }
 
   @Delete(":id")
-  @Roles("admin")
+  @Roles(...ADMIN_ONLY_ROLES)
   deactivate(@Param("id", ParseUUIDPipe) id: string) {
     return this.itemsService.deactivate(id);
   }

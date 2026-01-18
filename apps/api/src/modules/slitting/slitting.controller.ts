@@ -21,6 +21,7 @@ import {
   completeJobSchema,
   approveJobSchema,
   publishScheduleSchema,
+  ADMIN_MANAGER_ROLES,
 } from "@repo/shared";
 import type {
   ScheduleSearchInput,
@@ -67,7 +68,7 @@ export class SlittingController {
   }
 
   @Post("schedules")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   createSchedule(
     @Body(new ZodValidationPipe(createScheduleSchema))
     input: CreateScheduleInput,
@@ -77,7 +78,7 @@ export class SlittingController {
   }
 
   @Patch("schedules/:id")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   updateSchedule(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updateScheduleSchema))
@@ -88,7 +89,7 @@ export class SlittingController {
   }
 
   @Post("schedules/:id/publish")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   publishSchedule(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(publishScheduleSchema))
@@ -116,7 +117,7 @@ export class SlittingController {
   }
 
   @Post("jobs")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   createJob(
     @Body(new ZodValidationPipe(createJobSchema)) input: CreateJobInput,
     @CurrentUser() user: RequestUser,
@@ -125,7 +126,7 @@ export class SlittingController {
   }
 
   @Patch("jobs/:id")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   updateJob(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updateJobSchema)) input: UpdateJobInput,
@@ -167,7 +168,7 @@ export class SlittingController {
   }
 
   @Post("jobs/:id/approve")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   approveJob(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(approveJobSchema)) input: ApproveJobInput,

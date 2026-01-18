@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ADMIN_MANAGER_ROLES, ADMIN_ONLY_ROLES } from "@repo/shared";
 import type { UserRole } from "@repo/shared";
 import {
   Home,
@@ -79,7 +80,7 @@ const navigation: NavEntry[] = [
         href: "/orders/approval",
         label: "승인 대기",
         icon: <ClipboardCheck className="h-[18px] w-[18px]" />,
-        roles: ["admin", "manager"],
+        roles: [...ADMIN_MANAGER_ROLES],
       },
       {
         href: "/orders/field",
@@ -135,19 +136,19 @@ const navigation: NavEntry[] = [
         href: "/settings/users",
         label: "사용자 관리",
         icon: <UserCog className="h-[18px] w-[18px]" />,
-        roles: ["admin"],
+        roles: [...ADMIN_ONLY_ROLES],
       },
       {
         href: "/settings/audit-logs",
         label: "감사 로그",
         icon: <FileText className="h-[18px] w-[18px]" />,
-        roles: ["admin"],
+        roles: [...ADMIN_ONLY_ROLES],
       },
       {
         href: "/settings/system",
         label: "시스템 설정",
         icon: <Settings className="h-[18px] w-[18px]" />,
-        roles: ["admin"],
+        roles: [...ADMIN_ONLY_ROLES],
       },
     ],
   },

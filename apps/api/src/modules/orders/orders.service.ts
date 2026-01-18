@@ -35,6 +35,26 @@ import type {
   ItemForm,
 } from "@repo/shared";
 import { ORDER_IN_REASONS, ORDER_OUT_REASONS } from "@repo/shared";
+
+const STATUS = {
+  PENDING: "pending",
+  FIELD_PROCESSING: "field_processing",
+  AWAITING_APPROVAL: "awaiting_approval",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+  CANCELLED: "cancelled",
+} as const;
+
+const HISTORY_ACTION = {
+  CREATED: "created",
+  UPDATED: "updated",
+  FIELD_STARTED: "field_started",
+  FIELD_COMPLETED: "field_completed",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+  CANCELLED: "cancelled",
+  URGENT_APPROVED: "urgent_approved",
+} as const;
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
 import { StocksService } from "../stocks/stocks.service";
@@ -596,7 +616,7 @@ export class OrdersService {
       .insert({
         order_number: orderNumber,
         type: input.type,
-        status: "pending",
+        status: STATUS.PENDING,
         is_urgent: false,
         reason: input.reason,
         partner_id: input.partnerId ?? null,
@@ -629,10 +649,10 @@ export class OrdersService {
       .from("order_history")
       .insert({
         order_id: orderData.id,
-        action: "created",
+        action: HISTORY_ACTION.CREATED,
         actor_id: requestedBy,
         previous_status: null,
-        new_status: "pending",
+        new_status: STATUS.PENDING,
         changes: { items: input.items },
       })
       .select()
@@ -669,7 +689,15 @@ export class OrdersService {
     const client = this.supabaseService.getServiceClient();
     const existingOrder = await this.findOne(id);
 
-    if (!["pending", "rejected"].includes(existingOrder.status)) {
+    if (
+      !(
+        [
+          STATUS.PENDING,
+          STATUS.FIELD_PROCESSING,
+          STATUS.AWAITING_APPROVAL,
+        ] as string[]
+      ).includes(existingOrder.status)
+    ) {
       throw new BadRequestException(
         `Cannot update order in status: ${existingOrder.status}`,
       );
@@ -717,7 +745,7 @@ export class OrdersService {
         history: {
           id: "",
           orderId: id,
-          action: "updated",
+          action: HISTORY_ACTION.UPDATED,
           actorId: userId,
           memo: null,
           previousStatus: existingOrder.status,
@@ -739,7 +767,7 @@ export class OrdersService {
       .from("order_history")
       .insert({
         order_id: id,
-        action: "updated",
+        action: HISTORY_ACTION.UPDATED,
         actor_id: userId,
         previous_status: existingOrder.status,
         new_status: existingOrder.status,
@@ -775,9 +803,13 @@ export class OrdersService {
     const existingOrder = await this.findOne(id);
 
     if (
-      !["pending", "field_processing", "awaiting_approval"].includes(
-        existingOrder.status,
-      )
+      !(
+        [
+          STATUS.PENDING,
+          STATUS.FIELD_PROCESSING,
+          STATUS.AWAITING_APPROVAL,
+        ] as string[]
+      ).includes(existingOrder.status)
     ) {
       throw new BadRequestException(
         `Cannot cancel order in status: ${existingOrder.status}`,
@@ -786,7 +818,7 @@ export class OrdersService {
 
     const { error: updateError } = await client
       .from("orders")
-      .update({ status: "cancelled" })
+      .update({ status: STATUS.CANCELLED })
       .eq("id", id);
 
     if (updateError) throw new BadRequestException(updateError.message);
@@ -795,11 +827,11 @@ export class OrdersService {
       .from("order_history")
       .insert({
         order_id: id,
-        action: "cancelled",
+        action: HISTORY_ACTION.CANCELLED,
         actor_id: userId,
         memo: memo ?? null,
         previous_status: existingOrder.status,
-        new_status: "cancelled",
+        new_status: STATUS.CANCELLED,
       })
       .select()
       .single();
@@ -826,7 +858,7 @@ export class OrdersService {
     const client = this.supabaseService.getServiceClient();
     const existingOrder = await this.findOne(id);
 
-    if (existingOrder.status !== "pending") {
+    if (existingOrder.status !== STATUS.PENDING) {
       throw new BadRequestException(
         `Cannot start field processing for order in status: ${existingOrder.status}`,
       );
@@ -835,7 +867,7 @@ export class OrdersService {
     const { error: updateError } = await client
       .from("orders")
       .update({
-        status: "field_processing",
+        status: STATUS.FIELD_PROCESSING,
         processed_by: userId,
       })
       .eq("id", id);
@@ -846,10 +878,10 @@ export class OrdersService {
       .from("order_history")
       .insert({
         order_id: id,
-        action: "field_started",
+        action: HISTORY_ACTION.FIELD_STARTED,
         actor_id: userId,
-        previous_status: "pending",
-        new_status: "field_processing",
+        previous_status: STATUS.PENDING,
+        new_status: STATUS.FIELD_PROCESSING,
       })
       .select()
       .single();
@@ -879,7 +911,7 @@ export class OrdersService {
     const client = this.supabaseService.getServiceClient();
     const existingOrder = await this.findOne(id);
 
-    if (existingOrder.status !== "field_processing") {
+    if (existingOrder.status !== STATUS.FIELD_PROCESSING) {
       throw new BadRequestException(
         `Cannot complete field processing for order in status: ${existingOrder.status}`,
       );
@@ -911,7 +943,7 @@ export class OrdersService {
     const { error: updateError } = await client
       .from("orders")
       .update({
-        status: "awaiting_approval",
+        status: STATUS.AWAITING_APPROVAL,
         processed_by: userId,
         processed_at: new Date().toISOString(),
       })
@@ -923,11 +955,11 @@ export class OrdersService {
       .from("order_history")
       .insert({
         order_id: id,
-        action: "field_completed",
+        action: HISTORY_ACTION.FIELD_COMPLETED,
         actor_id: userId,
         memo: input.memo ?? null,
-        previous_status: "field_processing",
-        new_status: "awaiting_approval",
+        previous_status: STATUS.FIELD_PROCESSING,
+        new_status: STATUS.AWAITING_APPROVAL,
         changes: { processedItems: input.items },
       })
       .select()
@@ -959,7 +991,7 @@ export class OrdersService {
     const client = this.supabaseService.getServiceClient();
     const existingOrder = await this.findOne(id);
 
-    if (existingOrder.status !== "awaiting_approval") {
+    if (existingOrder.status !== STATUS.AWAITING_APPROVAL) {
       throw new BadRequestException(
         `Cannot approve order in status: ${existingOrder.status}`,
       );
@@ -970,7 +1002,7 @@ export class OrdersService {
     const { error: updateError } = await client
       .from("orders")
       .update({
-        status: "approved",
+        status: STATUS.APPROVED,
         approved_by: userId,
         approved_at: new Date().toISOString(),
       })
@@ -982,11 +1014,11 @@ export class OrdersService {
       .from("order_history")
       .insert({
         order_id: id,
-        action: "approved",
+        action: HISTORY_ACTION.APPROVED,
         actor_id: userId,
         memo: input.memo ?? null,
-        previous_status: "awaiting_approval",
-        new_status: "approved",
+        previous_status: STATUS.AWAITING_APPROVAL,
+        new_status: STATUS.APPROVED,
       })
       .select()
       .single();
@@ -1020,7 +1052,7 @@ export class OrdersService {
     const client = this.supabaseService.getServiceClient();
     const existingOrder = await this.findOne(id);
 
-    if (existingOrder.status !== "awaiting_approval") {
+    if (existingOrder.status !== STATUS.AWAITING_APPROVAL) {
       throw new BadRequestException(
         `Cannot reject order in status: ${existingOrder.status}`,
       );
@@ -1029,7 +1061,7 @@ export class OrdersService {
     const { error: updateError } = await client
       .from("orders")
       .update({
-        status: "rejected",
+        status: STATUS.REJECTED,
         approved_by: userId,
         approved_at: new Date().toISOString(),
       })
@@ -1041,11 +1073,11 @@ export class OrdersService {
       .from("order_history")
       .insert({
         order_id: id,
-        action: "rejected",
+        action: HISTORY_ACTION.REJECTED,
         actor_id: userId,
         memo: input.memo,
-        previous_status: "awaiting_approval",
-        new_status: "rejected",
+        previous_status: STATUS.AWAITING_APPROVAL,
+        new_status: STATUS.REJECTED,
       })
       .select()
       .single();
@@ -1076,7 +1108,7 @@ export class OrdersService {
     const client = this.supabaseService.getServiceClient();
     const existingOrder = await this.findOne(id);
 
-    if (existingOrder.status !== "pending") {
+    if (existingOrder.status !== STATUS.PENDING) {
       throw new BadRequestException(
         `Urgent approval only available for pending orders. Current status: ${existingOrder.status}`,
       );
@@ -1111,7 +1143,7 @@ export class OrdersService {
     const { error: updateError } = await client
       .from("orders")
       .update({
-        status: "approved",
+        status: STATUS.APPROVED,
         is_urgent: true,
         processed_by: userId,
         processed_at: new Date().toISOString(),
@@ -1126,11 +1158,11 @@ export class OrdersService {
       .from("order_history")
       .insert({
         order_id: id,
-        action: "urgent_approved",
+        action: HISTORY_ACTION.URGENT_APPROVED,
         actor_id: userId,
         memo: input.memo ?? null,
-        previous_status: "pending",
-        new_status: "approved",
+        previous_status: STATUS.PENDING,
+        new_status: STATUS.APPROVED,
         changes: { processedItems: input.items, isUrgent: true },
       })
       .select()

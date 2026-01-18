@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAssignRole } from "@/hooks/api";
+import { USER_ROLES } from "@repo/shared";
 import type { UserWithRoles, UserRole } from "@repo/shared";
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -31,7 +32,7 @@ export function RoleAssignmentForm({
   const [selectedRole, setSelectedRole] = useState<UserRole | "">("");
   const assignMutation = useAssignRole();
 
-  const availableRoles = (["admin", "manager", "worker"] as const).filter(
+  const availableRoles = USER_ROLES.filter(
     (role) => !user.roles.includes(role),
   );
 

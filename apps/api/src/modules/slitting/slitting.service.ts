@@ -42,6 +42,55 @@ import type {
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
 
+const SCHEDULE_STATUS = {
+  DRAFT: "draft",
+  PUBLISHED: "published",
+  IN_PROGRESS: "in_progress",
+  COMPLETED: "completed",
+} as const;
+
+const JOB_STATUS = {
+  PENDING: "pending",
+  READY: "ready",
+  IN_PROGRESS: "in_progress",
+  COMPLETED: "completed",
+  APPROVED: "approved",
+} as const;
+
+const MACHINE_STATUS = {
+  IDLE: "idle",
+  RUNNING: "running",
+  MAINTENANCE: "maintenance",
+} as const;
+
+const ENTITY_TYPE = {
+  SCHEDULE: "schedule",
+  JOB: "job",
+} as const;
+
+const HISTORY_ACTION = {
+  CREATED: "created",
+  UPDATED: "updated",
+  PUBLISHED: "published",
+  READY: "ready",
+  STARTED: "started",
+  COMPLETED: "completed",
+  APPROVED: "approved",
+  CANCELLED: "cancelled",
+} as const;
+
+const STOCK_STATUS = {
+  AVAILABLE: "available",
+  RESERVED: "reserved",
+  QUARANTINE: "quarantine",
+  DISPOSED: "disposed",
+} as const;
+
+const STOCK_CONDITION = {
+  PARENT: "parent",
+  SLITTED: "slitted",
+} as const;
+
 interface DbSchedule {
   id: string;
   schedule_number: string;
@@ -528,11 +577,13 @@ export class SlittingService {
 
     const stats = {
       totalJobs: jobs.length,
-      pendingJobs: jobs.filter((j) => j.status === "pending").length,
-      readyJobs: jobs.filter((j) => j.status === "ready").length,
-      inProgressJobs: jobs.filter((j) => j.status === "in_progress").length,
-      completedJobs: jobs.filter((j) => j.status === "completed").length,
-      approvedJobs: jobs.filter((j) => j.status === "approved").length,
+      pendingJobs: jobs.filter((j) => j.status === JOB_STATUS.PENDING).length,
+      readyJobs: jobs.filter((j) => j.status === JOB_STATUS.READY).length,
+      inProgressJobs: jobs.filter((j) => j.status === JOB_STATUS.IN_PROGRESS)
+        .length,
+      completedJobs: jobs.filter((j) => j.status === JOB_STATUS.COMPLETED)
+        .length,
+      approvedJobs: jobs.filter((j) => j.status === JOB_STATUS.APPROVED).length,
     };
 
     return {
@@ -560,7 +611,7 @@ export class SlittingService {
       .insert({
         schedule_number: scheduleNumber,
         scheduled_date: input.scheduledDate,
-        status: "draft",
+        status: SCHEDULE_STATUS.DRAFT,
         created_by: createdBy,
         memo: input.memo ?? null,
       })
@@ -572,12 +623,12 @@ export class SlittingService {
     const { data: historyData, error: historyError } = await client
       .from("slitting_history")
       .insert({
-        entity_type: "schedule",
+        entity_type: ENTITY_TYPE.SCHEDULE,
         entity_id: scheduleData.id,
-        action: "created",
+        action: HISTORY_ACTION.CREATED,
         actor_id: createdBy,
         previous_status: null,
-        new_status: "draft",
+        new_status: SCHEDULE_STATUS.DRAFT,
       })
       .select()
       .single();
@@ -611,7 +662,7 @@ export class SlittingService {
     const client = this.supabaseService.getServiceClient();
     const existingSchedule = await this.findOneSchedule(id);
 
-    if (existingSchedule.status !== "draft") {
+    if (existingSchedule.status !== SCHEDULE_STATUS.DRAFT) {
       throw new BadRequestException(
         `Cannot update schedule in status: ${existingSchedule.status}`,
       );
@@ -640,9 +691,9 @@ export class SlittingService {
         schedule: existingSchedule,
         history: {
           id: "",
-          entityType: "schedule",
+          entityType: ENTITY_TYPE.SCHEDULE,
           entityId: id,
-          action: "updated",
+          action: HISTORY_ACTION.UPDATED,
           actorId: userId,
           previousStatus: existingSchedule.status,
           newStatus: existingSchedule.status,
@@ -663,9 +714,9 @@ export class SlittingService {
     const { data: historyData, error: historyError } = await client
       .from("slitting_history")
       .insert({
-        entity_type: "schedule",
+        entity_type: ENTITY_TYPE.SCHEDULE,
         entity_id: id,
-        action: "updated",
+        action: HISTORY_ACTION.UPDATED,
         actor_id: userId,
         previous_status: existingSchedule.status,
         new_status: existingSchedule.status,
@@ -700,7 +751,7 @@ export class SlittingService {
     const client = this.supabaseService.getServiceClient();
     const existingSchedule = await this.findOneSchedule(id);
 
-    if (existingSchedule.status !== "draft") {
+    if (existingSchedule.status !== SCHEDULE_STATUS.DRAFT) {
       throw new BadRequestException(
         `Cannot publish schedule in status: ${existingSchedule.status}`,
       );
@@ -712,7 +763,7 @@ export class SlittingService {
 
     const { error: updateError } = await client
       .from("slitting_schedules")
-      .update({ status: "published" })
+      .update({ status: SCHEDULE_STATUS.PUBLISHED })
       .eq("id", id);
 
     if (updateError) throw new BadRequestException(updateError.message);
@@ -720,12 +771,12 @@ export class SlittingService {
     const { data: historyData, error: historyError } = await client
       .from("slitting_history")
       .insert({
-        entity_type: "schedule",
+        entity_type: ENTITY_TYPE.SCHEDULE,
         entity_id: id,
-        action: "published",
+        action: HISTORY_ACTION.PUBLISHED,
         actor_id: userId,
-        previous_status: "draft",
-        new_status: "published",
+        previous_status: SCHEDULE_STATUS.DRAFT,
+        new_status: SCHEDULE_STATUS.PUBLISHED,
         memo: memo ?? null,
       })
       .select()
@@ -858,7 +909,7 @@ export class SlittingService {
     const client = this.supabaseService.getServiceClient();
 
     const schedule = await this.findOneSchedule(input.scheduleId);
-    if (schedule.status !== "draft") {
+    if (schedule.status !== SCHEDULE_STATUS.DRAFT) {
       throw new BadRequestException(
         `Cannot add jobs to schedule in status: ${schedule.status}`,
       );
@@ -887,13 +938,13 @@ export class SlittingService {
       );
     }
 
-    if (stockData.status !== "available") {
+    if (stockData.status !== STOCK_STATUS.AVAILABLE) {
       throw new BadRequestException(
         `Stock ${input.parentStockId} is not available`,
       );
     }
 
-    if (stockData.condition !== "parent") {
+    if (stockData.condition !== STOCK_CONDITION.PARENT) {
       throw new BadRequestException(
         `Stock ${input.parentStockId} is not a parent roll`,
       );
@@ -919,7 +970,7 @@ export class SlittingService {
         parent_stock_id: input.parentStockId,
         operator_id: input.operatorId ?? null,
         sequence_number: sequenceNumber,
-        status: "pending",
+        status: JOB_STATUS.PENDING,
         memo: input.memo ?? null,
       })
       .select()
@@ -930,12 +981,12 @@ export class SlittingService {
     const { data: historyData, error: historyError } = await client
       .from("slitting_history")
       .insert({
-        entity_type: "job",
+        entity_type: ENTITY_TYPE.JOB,
         entity_id: jobData.id,
-        action: "created",
+        action: HISTORY_ACTION.CREATED,
         actor_id: userId,
         previous_status: null,
-        new_status: "pending",
+        new_status: JOB_STATUS.PENDING,
         changes: { scheduleId: input.scheduleId, machineId: input.machineId },
       })
       .select()
@@ -971,13 +1022,17 @@ export class SlittingService {
     const client = this.supabaseService.getServiceClient();
     const existingJob = await this.findOneJob(id);
 
-    if (existingJob.status !== "pending") {
+    if (existingJob.status !== JOB_STATUS.PENDING) {
       throw new BadRequestException(
         `Cannot mark job ready in status: ${existingJob.status}`,
       );
     }
 
-    if (!["published", "in_progress"].includes(existingJob.schedule.status)) {
+    if (
+      !(
+        [SCHEDULE_STATUS.PUBLISHED, SCHEDULE_STATUS.IN_PROGRESS] as string[]
+      ).includes(existingJob.schedule.status)
+    ) {
       throw new BadRequestException(
         `Schedule must be published to mark jobs ready`,
       );
@@ -985,7 +1040,7 @@ export class SlittingService {
 
     const { error: updateError } = await client
       .from("slitting_jobs")
-      .update({ status: "ready" })
+      .update({ status: JOB_STATUS.READY })
       .eq("id", id);
 
     if (updateError) throw new BadRequestException(updateError.message);
@@ -993,12 +1048,12 @@ export class SlittingService {
     const { data: historyData, error: historyError } = await client
       .from("slitting_history")
       .insert({
-        entity_type: "job",
+        entity_type: ENTITY_TYPE.JOB,
         entity_id: id,
-        action: "ready",
+        action: HISTORY_ACTION.READY,
         actor_id: userId,
-        previous_status: "pending",
-        new_status: "ready",
+        previous_status: JOB_STATUS.PENDING,
+        new_status: JOB_STATUS.READY,
         memo: memo ?? null,
       })
       .select()
@@ -1030,7 +1085,7 @@ export class SlittingService {
     const client = this.supabaseService.getServiceClient();
     const existingJob = await this.findOneJob(id);
 
-    if (existingJob.status !== "ready") {
+    if (existingJob.status !== JOB_STATUS.READY) {
       throw new BadRequestException(
         `Cannot start job in status: ${existingJob.status}`,
       );
@@ -1041,7 +1096,7 @@ export class SlittingService {
     const { error: jobError } = await client
       .from("slitting_jobs")
       .update({
-        status: "in_progress",
+        status: JOB_STATUS.IN_PROGRESS,
         operator_id: finalOperatorId,
         started_at: new Date().toISOString(),
       })
@@ -1051,27 +1106,27 @@ export class SlittingService {
 
     const { error: machineError } = await client
       .from("machines")
-      .update({ status: "running" })
+      .update({ status: MACHINE_STATUS.RUNNING })
       .eq("id", existingJob.machineId);
 
     if (machineError) throw new BadRequestException(machineError.message);
 
-    if (existingJob.schedule.status === "published") {
+    if (existingJob.schedule.status === SCHEDULE_STATUS.PUBLISHED) {
       await client
         .from("slitting_schedules")
-        .update({ status: "in_progress" })
+        .update({ status: SCHEDULE_STATUS.IN_PROGRESS })
         .eq("id", existingJob.scheduleId);
     }
 
     const { data: historyData, error: historyError } = await client
       .from("slitting_history")
       .insert({
-        entity_type: "job",
+        entity_type: ENTITY_TYPE.JOB,
         entity_id: id,
-        action: "started",
+        action: HISTORY_ACTION.STARTED,
         actor_id: userId,
-        previous_status: "ready",
-        new_status: "in_progress",
+        previous_status: JOB_STATUS.READY,
+        new_status: JOB_STATUS.IN_PROGRESS,
         changes: { operatorId: finalOperatorId },
         memo: memo ?? null,
       })
@@ -1107,7 +1162,7 @@ export class SlittingService {
     const client = this.supabaseService.getServiceClient();
     const existingJob = await this.findOneJob(id);
 
-    if (existingJob.status !== "in_progress") {
+    if (existingJob.status !== JOB_STATUS.IN_PROGRESS) {
       throw new BadRequestException(
         `Cannot complete job in status: ${existingJob.status}`,
       );
@@ -1147,7 +1202,7 @@ export class SlittingService {
     const { error: jobError } = await client
       .from("slitting_jobs")
       .update({
-        status: "completed",
+        status: JOB_STATUS.COMPLETED,
         completed_at: new Date().toISOString(),
       })
       .eq("id", id);
@@ -1156,7 +1211,7 @@ export class SlittingService {
 
     const { error: machineError } = await client
       .from("machines")
-      .update({ status: "idle" })
+      .update({ status: MACHINE_STATUS.IDLE })
       .eq("id", existingJob.machineId);
 
     if (machineError) throw new BadRequestException(machineError.message);
@@ -1164,12 +1219,12 @@ export class SlittingService {
     const { data: historyData, error: historyError } = await client
       .from("slitting_history")
       .insert({
-        entity_type: "job",
+        entity_type: ENTITY_TYPE.JOB,
         entity_id: id,
-        action: "completed",
+        action: HISTORY_ACTION.COMPLETED,
         actor_id: userId,
-        previous_status: "in_progress",
-        new_status: "completed",
+        previous_status: JOB_STATUS.IN_PROGRESS,
+        new_status: JOB_STATUS.COMPLETED,
         changes: { outputCount: input.outputs.length },
         memo: input.memo ?? null,
       })
@@ -1202,7 +1257,7 @@ export class SlittingService {
     const client = this.supabaseService.getServiceClient();
     const existingJob = await this.findOneJob(id);
 
-    if (existingJob.status !== "completed") {
+    if (existingJob.status !== JOB_STATUS.COMPLETED) {
       throw new BadRequestException(
         `Cannot approve job in status: ${existingJob.status}`,
       );

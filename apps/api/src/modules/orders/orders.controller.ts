@@ -18,6 +18,7 @@ import {
   approveOrderSchema,
   rejectOrderSchema,
   urgentApproveOrderSchema,
+  ADMIN_MANAGER_ROLES,
 } from "@repo/shared";
 import type {
   OrderSearchInput,
@@ -59,7 +60,7 @@ export class OrdersController {
   }
 
   @Post()
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   create(
     @Body(new ZodValidationPipe(createOrderSchema)) input: CreateOrderInput,
     @CurrentUser() user: RequestUser,
@@ -68,7 +69,7 @@ export class OrdersController {
   }
 
   @Patch(":id")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   update(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updateOrderSchema)) input: UpdateOrderInput,
@@ -78,7 +79,7 @@ export class OrdersController {
   }
 
   @Delete(":id")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   cancel(
     @Param("id", ParseUUIDPipe) id: string,
     @Body() body: { memo?: string },
@@ -105,7 +106,7 @@ export class OrdersController {
   }
 
   @Post(":id/approve")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   approve(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(approveOrderSchema)) input: ApproveOrderInput,
@@ -115,7 +116,7 @@ export class OrdersController {
   }
 
   @Post(":id/reject")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   reject(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(rejectOrderSchema)) input: RejectOrderInput,
@@ -125,7 +126,7 @@ export class OrdersController {
   }
 
   @Post(":id/urgent")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   urgentApprove(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(urgentApproveOrderSchema))

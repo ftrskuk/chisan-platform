@@ -8,7 +8,11 @@ import {
   UseGuards,
   UsePipes,
 } from "@nestjs/common";
-import { settingCategorySchema, updateSettingSchema } from "@repo/shared";
+import {
+  settingCategorySchema,
+  updateSettingSchema,
+  ADMIN_ONLY_ROLES,
+} from "@repo/shared";
 import type { SettingCategory, UpdateSettingInput } from "@repo/shared";
 import { CurrentUser } from "../../core/auth/decorators/current-user.decorator";
 import { Roles } from "../../core/auth/decorators/roles.decorator";
@@ -24,13 +28,13 @@ export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @Get()
-  @Roles("admin")
+  @Roles(...ADMIN_ONLY_ROLES)
   findAll() {
     return this.settingsService.findAll();
   }
 
   @Get(":category")
-  @Roles("admin")
+  @Roles(...ADMIN_ONLY_ROLES)
   findByCategory(@Param("category") category: SettingCategory) {
     const result = settingCategorySchema.safeParse(category);
     if (!result.success) {
@@ -40,7 +44,7 @@ export class SettingsController {
   }
 
   @Patch(":category/:key")
-  @Roles("admin")
+  @Roles(...ADMIN_ONLY_ROLES)
   update(
     @Param("category") category: SettingCategory,
     @Param("key") key: string,

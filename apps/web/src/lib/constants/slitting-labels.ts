@@ -20,3 +20,9 @@ export const jobStatusLabels: Record<JobStatus, string> = {
   completed: "완료",
   approved: "승인완료",
 };
+
+export const JOBS_DEFAULT_FILTER_STATUSES: JobStatus[] = [
+  "pending",
+  "ready",
+  "in_progress",
+];

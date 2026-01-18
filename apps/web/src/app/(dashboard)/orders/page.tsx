@@ -19,6 +19,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
 import type { OrderSearchInput, OrderType, OrderStatus } from "@repo/shared";
+import { ORDER_STATUSES } from "@repo/shared";
+import { typeLabels, orderStatusLabels } from "@/lib/constants/order-labels";
 
 export default function OrdersPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -65,18 +67,15 @@ export default function OrdersPage() {
     searchParams.q;
 
   const typeOptions: { label: string; value: OrderType }[] = [
-    { label: "입고", value: "stock_in" },
-    { label: "출고", value: "stock_out" },
+    { label: typeLabels.stock_in, value: "stock_in" },
+    { label: typeLabels.stock_out, value: "stock_out" },
   ];
 
-  const statusOptions: { label: string; value: OrderStatus }[] = [
-    { label: "대기중", value: "pending" },
-    { label: "현장처리중", value: "field_processing" },
-    { label: "승인대기", value: "awaiting_approval" },
-    { label: "승인완료", value: "approved" },
-    { label: "반려", value: "rejected" },
-    { label: "취소됨", value: "cancelled" },
-  ];
+  const statusOptions: { label: string; value: OrderStatus }[] =
+    ORDER_STATUSES.map((status) => ({
+      label: orderStatusLabels[status],
+      value: status,
+    }));
 
   const partnerOptions =
     partners?.map((p) => ({

@@ -15,6 +15,8 @@ import {
   updatePartnerSchema,
   createBrandSchema,
   updateBrandSchema,
+  ADMIN_MANAGER_ROLES,
+  ADMIN_ONLY_ROLES,
 } from "@repo/shared";
 import type {
   CreatePartnerInput,
@@ -54,14 +56,14 @@ export class PartnersController {
   }
 
   @Post()
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   @UsePipes(new ZodValidationPipe(createPartnerSchema))
   create(@Body() input: CreatePartnerInput) {
     return this.partnersService.create(input);
   }
 
   @Patch(":id")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   update(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updatePartnerSchema)) input: UpdatePartnerInput,
@@ -70,7 +72,7 @@ export class PartnersController {
   }
 
   @Delete(":id")
-  @Roles("admin")
+  @Roles(...ADMIN_ONLY_ROLES)
   deactivate(@Param("id", ParseUUIDPipe) id: string) {
     return this.partnersService.deactivate(id);
   }
@@ -81,7 +83,7 @@ export class PartnersController {
   }
 
   @Post(":id/brands")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   createBrand(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(createBrandSchema)) input: CreateBrandInput,
@@ -101,7 +103,7 @@ export class BrandsController {
   }
 
   @Patch(":id")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   update(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updateBrandSchema)) input: UpdateBrandInput,

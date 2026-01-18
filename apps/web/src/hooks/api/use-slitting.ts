@@ -5,7 +5,6 @@ import type {
   MachinesResponse,
   MachineSearchInput,
   UpdateMachineStatusInput,
-  SlittingScheduleWithStats,
   SlittingScheduleWithRelations,
   SlittingSchedulesResponse,
   SlittingJobWithRelations,

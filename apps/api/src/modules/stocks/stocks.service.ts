@@ -33,6 +33,21 @@ import type {
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
 
+const STOCK_STATUS = {
+  AVAILABLE: "available",
+  RESERVED: "reserved",
+  QUARANTINE: "quarantine",
+  DISPOSED: "disposed",
+} as const;
+
+const MOVEMENT_TYPE = {
+  IN: "in",
+  OUT: "out",
+  ADJUSTMENT: "adjustment",
+  MOVE: "move",
+  QUARANTINE: "quarantine",
+} as const;
+
 interface DbStock {
   id: string;
   item_id: string;
@@ -508,7 +523,7 @@ export class StocksService {
         weight_kg: weightValue,
         quantity: quantity,
         condition: input.condition,
-        status: "available",
+        status: STOCK_STATUS.AVAILABLE,
         is_active: true,
         batch_number: batchNumber,
         lot_number: input.lotNumber ?? null,
@@ -525,7 +540,7 @@ export class StocksService {
       .from("stock_movements")
       .insert({
         stock_id: stockData.id,
-        movement_type: "in",
+        movement_type: MOVEMENT_TYPE.IN,
         quantity_change: quantity,
         weight_change_kg: weightValue,
         quantity_before: 0,

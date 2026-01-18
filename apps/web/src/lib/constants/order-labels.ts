@@ -1,4 +1,9 @@
-import type { OrderType, OrderInReason, OrderOutReason } from "@repo/shared";
+import type {
+  OrderType,
+  OrderInReason,
+  OrderOutReason,
+  OrderStatus,
+} from "@repo/shared";
 
 export const typeLabels: Record<OrderType, string> = {
   stock_in: "입고",
@@ -16,3 +21,17 @@ export const reasonLabels: Record<OrderInReason | OrderOutReason, string> = {
   slitting: "슬리팅",
   loss: "손실/폐기",
 };
+
+export const orderStatusLabels: Record<OrderStatus, string> = {
+  pending: "대기중",
+  field_processing: "현장처리중",
+  awaiting_approval: "승인대기",
+  approved: "승인완료",
+  rejected: "반려",
+  cancelled: "취소됨",
+};
+
+export const FIELD_QUEUE_DEFAULT_STATUSES: OrderStatus[] = [
+  "pending",
+  "field_processing",
+];

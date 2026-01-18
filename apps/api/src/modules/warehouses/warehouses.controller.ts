@@ -15,6 +15,8 @@ import {
   updateWarehouseSchema,
   createLocationSchema,
   updateLocationSchema,
+  ADMIN_MANAGER_ROLES,
+  ADMIN_ONLY_ROLES,
 } from "@repo/shared";
 import type {
   CreateWarehouseInput,
@@ -44,14 +46,14 @@ export class WarehousesController {
   }
 
   @Post()
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   @UsePipes(new ZodValidationPipe(createWarehouseSchema))
   create(@Body() input: CreateWarehouseInput) {
     return this.warehousesService.create(input);
   }
 
   @Patch(":id")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   update(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updateWarehouseSchema))
@@ -61,7 +63,7 @@ export class WarehousesController {
   }
 
   @Delete(":id")
-  @Roles("admin")
+  @Roles(...ADMIN_ONLY_ROLES)
   deactivate(@Param("id", ParseUUIDPipe) id: string) {
     return this.warehousesService.deactivate(id);
   }
@@ -72,7 +74,7 @@ export class WarehousesController {
   }
 
   @Post(":id/locations")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   createLocation(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(createLocationSchema))
@@ -82,7 +84,7 @@ export class WarehousesController {
   }
 
   @Patch("locations/:locationId")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   updateLocation(
     @Param("locationId", ParseUUIDPipe) locationId: string,
     @Body(new ZodValidationPipe(updateLocationSchema))

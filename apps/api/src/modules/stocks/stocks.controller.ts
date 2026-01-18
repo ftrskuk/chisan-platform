@@ -14,6 +14,7 @@ import {
   bulkStockInSchema,
   createStockOutSchema,
   bulkStockOutSchema,
+  ADMIN_MANAGER_ROLES,
 } from "@repo/shared";
 import type {
   StockSearchInput,
@@ -48,7 +49,7 @@ export class StocksController {
   }
 
   @Post("in")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   stockIn(
     @Body(new ZodValidationPipe(createStockInSchema)) input: CreateStockInInput,
     @CurrentUser() user: RequestUser,
@@ -57,7 +58,7 @@ export class StocksController {
   }
 
   @Post("in/bulk")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   bulkStockIn(
     @Body(new ZodValidationPipe(bulkStockInSchema)) input: BulkStockInInput,
     @CurrentUser() user: RequestUser,
@@ -66,7 +67,7 @@ export class StocksController {
   }
 
   @Post("out")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   stockOut(
     @Body(new ZodValidationPipe(createStockOutSchema))
     input: CreateStockOutInput,
@@ -76,7 +77,7 @@ export class StocksController {
   }
 
   @Post("out/bulk")
-  @Roles("admin", "manager")
+  @Roles(...ADMIN_MANAGER_ROLES)
   bulkStockOut(
     @Body(new ZodValidationPipe(bulkStockOutSchema)) input: BulkStockOutInput,
     @CurrentUser() user: RequestUser,

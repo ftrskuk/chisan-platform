@@ -7,7 +7,7 @@ import {
   UseGuards,
   UsePipes,
 } from "@nestjs/common";
-import { auditLogQuerySchema } from "@repo/shared";
+import { auditLogQuerySchema, ADMIN_ONLY_ROLES } from "@repo/shared";
 import type { AuditLogQueryInput } from "@repo/shared";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -17,7 +17,7 @@ import { AuditService } from "./audit.service";
 
 @Controller("audit-logs")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("admin")
+@Roles(...ADMIN_ONLY_ROLES)
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 

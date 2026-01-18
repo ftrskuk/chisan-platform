@@ -17,13 +17,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { JobSearchInput, JobStatus } from "@repo/shared";
-import { jobStatusLabels } from "@/lib/constants/slitting-labels";
+import { JOB_STATUSES } from "@repo/shared";
+import {
+  jobStatusLabels,
+  JOBS_DEFAULT_FILTER_STATUSES,
+} from "@/lib/constants/slitting-labels";
 
 export default function SlittingJobsPage() {
   const [searchParams, setSearchParams] = useState<JobSearchInput>({
     limit: 20,
     offset: 0,
-    statuses: ["pending", "ready", "in_progress"],
+    statuses: JOBS_DEFAULT_FILTER_STATUSES,
   });
 
   const { data: jobsResponse, isLoading } = useSlittingJobs(searchParams);
@@ -68,7 +72,7 @@ export default function SlittingJobsPage() {
     setSearchParams({
       limit: 20,
       offset: 0,
-      statuses: ["pending", "ready", "in_progress"],
+      statuses: JOBS_DEFAULT_FILTER_STATUSES,
     });
   };
 
@@ -77,15 +81,15 @@ export default function SlittingJobsPage() {
     searchParams.machineId ||
     searchParams.operatorId ||
     searchParams.q ||
-    (searchParams.statuses && searchParams.statuses.length !== 3);
+    (searchParams.statuses &&
+      searchParams.statuses.length !== JOBS_DEFAULT_FILTER_STATUSES.length);
 
-  const statusOptions: { label: string; value: JobStatus }[] = [
-    { label: jobStatusLabels.pending, value: "pending" },
-    { label: jobStatusLabels.ready, value: "ready" },
-    { label: jobStatusLabels.in_progress, value: "in_progress" },
-    { label: jobStatusLabels.completed, value: "completed" },
-    { label: jobStatusLabels.approved, value: "approved" },
-  ];
+  const statusOptions: { label: string; value: JobStatus }[] = JOB_STATUSES.map(
+    (status) => ({
+      label: jobStatusLabels[status],
+      value: status,
+    }),
+  );
 
   return (
     <div className="space-y-6">
