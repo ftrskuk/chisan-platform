@@ -1,6 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
 import { DataTableColumnHeader } from "@/components/data-table";
 import { JobStatusBadge } from "./job-status-badge";
 import type { SlittingJobWithRelations } from "@repo/shared";
@@ -15,9 +16,12 @@ export function jobColumns(): ColumnDef<SlittingJobWithRelations>[] {
         <DataTableColumnHeader column={column} title="#순서" />
       ),
       cell: ({ row }) => (
-        <span className="font-mono text-sm">
+        <Link
+          href={`/production/slitting/jobs/${row.original.id}`}
+          className="font-mono text-sm text-primary hover:underline"
+        >
           #{row.original.sequenceNumber}
-        </span>
+        </Link>
       ),
     },
     {
