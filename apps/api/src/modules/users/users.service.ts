@@ -6,6 +6,7 @@ import {
 import type { UserRole, UserWithRoles } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
+import { handleSupabaseError } from "../../common/utils";
 
 interface DbUser {
   id: string;
@@ -38,7 +39,10 @@ export class UsersService {
       .order("created_at", { ascending: false });
 
     if (usersError) {
-      throw new BadRequestException(usersError.message);
+      handleSupabaseError(usersError, {
+        operation: "fetch users",
+        resource: "User",
+      });
     }
 
     const { data: allRoles, error: rolesError } = await client
@@ -46,7 +50,10 @@ export class UsersService {
       .select("user_id, role");
 
     if (rolesError) {
-      throw new BadRequestException(rolesError.message);
+      handleSupabaseError(rolesError, {
+        operation: "fetch user roles",
+        resource: "UserRole",
+      });
     }
 
     const rolesByUser = new Map<string, UserRole[]>();
@@ -125,7 +132,10 @@ export class UsersService {
       .eq("id", id);
 
     if (error) {
-      throw new BadRequestException(error.message);
+      handleSupabaseError(error, {
+        operation: "update user",
+        resource: "User",
+      });
     }
 
     return this.findOne(id);
@@ -151,7 +161,10 @@ export class UsersService {
     );
 
     if (error) {
-      throw new BadRequestException(error.message);
+      handleSupabaseError(error, {
+        operation: "assign role",
+        resource: "UserRole",
+      });
     }
 
     await this.auditService.log({
@@ -190,7 +203,10 @@ export class UsersService {
       .eq("role", role);
 
     if (error) {
-      throw new BadRequestException(error.message);
+      handleSupabaseError(error, {
+        operation: "remove role",
+        resource: "UserRole",
+      });
     }
 
     await this.auditService.log({

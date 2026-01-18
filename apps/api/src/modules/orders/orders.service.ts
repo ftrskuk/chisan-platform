@@ -24,17 +24,24 @@ import type {
   RejectOrderInput,
   UrgentApproveOrderInput,
   OrderResult,
-  Item,
-  PaperType,
-  Brand,
-  Stock,
-  StockCondition,
-  StockStatus,
-  Partner,
-  PartnerType,
-  ItemForm,
 } from "@repo/shared";
 import { ORDER_IN_REASONS, ORDER_OUT_REASONS } from "@repo/shared";
+import {
+  type DbItem,
+  type DbPaperType,
+  type DbBrand,
+  type DbStock,
+  type DbPartner,
+  type DbUser,
+  mapItem,
+  mapPaperType,
+  mapBrand,
+  mapStock,
+  mapStockNullable,
+  mapPartnerNullable,
+  mapUser,
+} from "../../common/mappers";
+import { handleSupabaseError } from "../../common/utils";
 
 const STATUS = {
   PENDING: "pending",
@@ -102,98 +109,6 @@ interface DbOrderHistory {
   new_status: string | null;
   changes: Record<string, unknown> | null;
   created_at: string;
-}
-
-interface DbPartner {
-  id: string;
-  partner_code: string;
-  name: string;
-  name_local: string | null;
-  partner_type: string;
-  country_code: string;
-  address: string | null;
-  city: string | null;
-  contact_name: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  supplier_currency: string | null;
-  supplier_payment_terms: string | null;
-  lead_time_days: number | null;
-  customer_currency: string | null;
-  customer_payment_terms: string | null;
-  credit_limit: number | null;
-  is_active: boolean;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface DbUser {
-  id: string;
-  display_name: string | null;
-  email: string;
-}
-
-interface DbItem {
-  id: string;
-  item_code: string;
-  display_name: string;
-  paper_type_id: string;
-  brand_id: string | null;
-  grammage: number;
-  form: string;
-  core_diameter_inch: number | null;
-  length_mm: number | null;
-  sheets_per_ream: number | null;
-  unit_of_measure: string;
-  is_active: boolean;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface DbPaperType {
-  id: string;
-  code: string;
-  name_en: string;
-  name_ko: string | null;
-  description: string | null;
-  sort_order: number;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface DbBrand {
-  id: string;
-  partner_id: string;
-  code: string;
-  name: string;
-  internal_code: string | null;
-  description: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface DbStock {
-  id: string;
-  item_id: string;
-  location_id: string;
-  width_mm: number;
-  condition: string;
-  quantity: number;
-  weight_kg: number | null;
-  status: string;
-  is_active: boolean;
-  batch_number: string | null;
-  lot_number: string | null;
-  received_at: string | null;
-  parent_stock_id: string | null;
-  source_type: string | null;
-  source_reference_id: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
 }
 
 interface DbOrderWithRelations extends DbOrder {
@@ -275,131 +190,19 @@ export class OrdersService {
     };
   }
 
-  private mapPartner(db: DbPartner | null): Partner | null {
-    if (!db) return null;
-    return {
-      id: db.id,
-      partnerCode: db.partner_code,
-      name: db.name,
-      nameLocal: db.name_local,
-      partnerType: db.partner_type as PartnerType,
-      countryCode: db.country_code,
-      address: db.address,
-      city: db.city,
-      contactName: db.contact_name,
-      contactEmail: db.contact_email,
-      contactPhone: db.contact_phone,
-      supplierCurrency: db.supplier_currency,
-      supplierPaymentTerms: db.supplier_payment_terms,
-      leadTimeDays: db.lead_time_days,
-      customerCurrency: db.customer_currency,
-      customerPaymentTerms: db.customer_payment_terms,
-      creditLimit: db.credit_limit ? Number(db.credit_limit) : null,
-      isActive: db.is_active,
-      notes: db.notes,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
-  private mapUser(
-    db: DbUser | null,
-  ): { id: string; displayName: string; email: string } | null {
-    if (!db) return null;
-    return {
-      id: db.id,
-      displayName: db.display_name ?? db.email,
-      email: db.email,
-    };
-  }
-
-  private mapItem(db: DbItem): Item {
-    return {
-      id: db.id,
-      itemCode: db.item_code,
-      displayName: db.display_name,
-      paperTypeId: db.paper_type_id,
-      brandId: db.brand_id,
-      grammage: db.grammage,
-      form: db.form as ItemForm,
-      coreDiameterInch: db.core_diameter_inch
-        ? Number(db.core_diameter_inch)
-        : null,
-      lengthMm: db.length_mm,
-      sheetsPerReam: db.sheets_per_ream,
-      unitOfMeasure: db.unit_of_measure,
-      isActive: db.is_active,
-      notes: db.notes,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
-  private mapPaperType(db: DbPaperType): PaperType {
-    return {
-      id: db.id,
-      code: db.code,
-      nameEn: db.name_en,
-      nameKo: db.name_ko,
-      description: db.description,
-      sortOrder: db.sort_order,
-      isActive: db.is_active,
-      createdAt: db.created_at,
-    };
-  }
-
-  private mapBrand(db: DbBrand | null): Brand | null {
-    if (!db) return null;
-    return {
-      id: db.id,
-      partnerId: db.partner_id,
-      code: db.code,
-      name: db.name,
-      internalCode: db.internal_code,
-      description: db.description,
-      isActive: db.is_active,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
-  private mapStock(db: DbStock | null): Stock | null {
-    if (!db) return null;
-    return {
-      id: db.id,
-      itemId: db.item_id,
-      locationId: db.location_id,
-      widthMm: db.width_mm,
-      condition: db.condition as StockCondition,
-      quantity: db.quantity,
-      weightKg: db.weight_kg ? Number(db.weight_kg) : null,
-      status: db.status as StockStatus,
-      isActive: db.is_active,
-      batchNumber: db.batch_number,
-      lotNumber: db.lot_number,
-      receivedAt: db.received_at,
-      parentStockId: db.parent_stock_id,
-      sourceType: db.source_type,
-      sourceReferenceId: db.source_reference_id,
-      notes: db.notes,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
   private mapOrderWithRelations(db: DbOrderWithRelations): OrderWithRelations {
     const order = this.mapOrder(db);
-    const partner = this.mapPartner(db.partners);
-    const requestedByUser = this.mapUser(db.requested_user)!;
-    const processedByUser = this.mapUser(db.processed_user);
-    const approvedByUser = this.mapUser(db.approved_user);
+    const partner = mapPartnerNullable(db.partners);
+    const requestedByUser = mapUser(db.requested_user)!;
+    const processedByUser = mapUser(db.processed_user);
+    const approvedByUser = mapUser(db.approved_user);
 
     const items: OrderItemWithRelations[] = (db.order_items || []).map((oi) => {
       const orderItem = this.mapOrderItem(oi);
-      const item = this.mapItem(oi.items);
-      const paperType = this.mapPaperType(oi.items.paper_types);
-      const brand = this.mapBrand(oi.items.brands);
-      const stock = this.mapStock(oi.stocks);
+      const item = mapItem(oi.items);
+      const paperType = mapPaperType(oi.items.paper_types);
+      const brand = oi.items.brands ? mapBrand(oi.items.brands) : null;
+      const stock = mapStockNullable(oi.stocks);
 
       return {
         ...orderItem,
@@ -491,7 +294,12 @@ export class OrdersService {
       .order("created_at", { ascending: false })
       .range(search.offset, search.offset + search.limit - 1);
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "fetch orders",
+        resource: "Order",
+      });
+    }
 
     const orders = (data as DbOrderWithRelations[]).map((db) =>
       this.mapOrderWithRelations(db),
@@ -1204,11 +1012,16 @@ export class OrdersService {
       .eq("order_id", orderId)
       .order("created_at", { ascending: true });
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "fetch order history",
+        resource: "OrderHistory",
+      });
+    }
 
     return (data || []).map((h) => ({
       ...this.mapOrderHistory(h as DbOrderHistory),
-      actor: this.mapUser((h as { actor: DbUser }).actor)!,
+      actor: mapUser((h as { actor: DbUser }).actor)!,
     }));
   }
 

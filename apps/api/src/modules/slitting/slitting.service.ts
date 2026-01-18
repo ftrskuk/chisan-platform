@@ -31,16 +31,22 @@ import type {
   CompleteJobInput,
   Machine,
   MachineStatus,
-  Stock,
-  StockCondition,
-  StockStatus,
-  Item,
-  PaperType,
-  Brand,
-  ItemForm,
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
+import {
+  type DbItem,
+  type DbPaperType,
+  type DbBrand,
+  type DbStock,
+  type DbUser,
+  mapItem,
+  mapPaperType,
+  mapBrand,
+  mapStock,
+  mapUser,
+} from "../../common/mappers";
+import { handleSupabaseError } from "../../common/utils";
 
 const SCHEDULE_STATUS = {
   DRAFT: "draft",
@@ -164,74 +170,6 @@ interface DbMachine {
   updated_at: string;
 }
 
-interface DbUser {
-  id: string;
-  display_name: string | null;
-  email: string;
-}
-
-interface DbItem {
-  id: string;
-  item_code: string;
-  display_name: string;
-  paper_type_id: string;
-  brand_id: string | null;
-  grammage: number;
-  form: string;
-  core_diameter_inch: number | null;
-  length_mm: number | null;
-  sheets_per_ream: number | null;
-  unit_of_measure: string;
-  is_active: boolean;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface DbPaperType {
-  id: string;
-  code: string;
-  name_en: string;
-  name_ko: string | null;
-  description: string | null;
-  sort_order: number;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface DbBrand {
-  id: string;
-  partner_id: string;
-  code: string;
-  name: string;
-  internal_code: string | null;
-  description: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface DbStock {
-  id: string;
-  item_id: string;
-  location_id: string;
-  width_mm: number;
-  condition: string;
-  quantity: number;
-  weight_kg: number | null;
-  status: string;
-  is_active: boolean;
-  batch_number: string | null;
-  lot_number: string | null;
-  received_at: string | null;
-  parent_stock_id: string | null;
-  source_type: string | null;
-  source_reference_id: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 interface DbJobWithRelations extends DbJob {
   slitting_schedules: DbSchedule;
   machines: DbMachine;
@@ -348,105 +286,21 @@ export class SlittingService {
     };
   }
 
-  private mapUser(
-    db: DbUser | null,
-  ): { id: string; displayName: string; email: string } | null {
-    if (!db) return null;
-    return {
-      id: db.id,
-      displayName: db.display_name ?? db.email,
-      email: db.email,
-    };
-  }
-
-  private mapItem(db: DbItem): Item {
-    return {
-      id: db.id,
-      itemCode: db.item_code,
-      displayName: db.display_name,
-      paperTypeId: db.paper_type_id,
-      brandId: db.brand_id,
-      grammage: db.grammage,
-      form: db.form as ItemForm,
-      coreDiameterInch: db.core_diameter_inch
-        ? Number(db.core_diameter_inch)
-        : null,
-      lengthMm: db.length_mm,
-      sheetsPerReam: db.sheets_per_ream,
-      unitOfMeasure: db.unit_of_measure,
-      isActive: db.is_active,
-      notes: db.notes,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
-  private mapPaperType(db: DbPaperType): PaperType {
-    return {
-      id: db.id,
-      code: db.code,
-      nameEn: db.name_en,
-      nameKo: db.name_ko,
-      description: db.description,
-      sortOrder: db.sort_order,
-      isActive: db.is_active,
-      createdAt: db.created_at,
-    };
-  }
-
-  private mapBrand(db: DbBrand | null): Brand | null {
-    if (!db) return null;
-    return {
-      id: db.id,
-      partnerId: db.partner_id,
-      code: db.code,
-      name: db.name,
-      internalCode: db.internal_code,
-      description: db.description,
-      isActive: db.is_active,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
-  private mapStock(db: DbStock): Stock {
-    return {
-      id: db.id,
-      itemId: db.item_id,
-      locationId: db.location_id,
-      widthMm: db.width_mm,
-      condition: db.condition as StockCondition,
-      quantity: db.quantity,
-      weightKg: db.weight_kg ? Number(db.weight_kg) : null,
-      status: db.status as StockStatus,
-      isActive: db.is_active,
-      batchNumber: db.batch_number,
-      lotNumber: db.lot_number,
-      receivedAt: db.received_at,
-      parentStockId: db.parent_stock_id,
-      sourceType: db.source_type,
-      sourceReferenceId: db.source_reference_id,
-      notes: db.notes,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
   private mapJobWithRelations(
     db: DbJobWithRelations,
   ): SlittingJobWithRelations {
     const job = this.mapJob(db);
     const schedule = this.mapSchedule(db.slitting_schedules);
     const machine = this.mapMachine(db.machines);
-    const operator = this.mapUser(db.operator);
-    const approvedByUser = this.mapUser(db.approved_user);
+    const operator = mapUser(db.operator);
+    const approvedByUser = mapUser(db.approved_user);
 
     const parentStock = {
-      ...this.mapStock(db.stocks),
+      ...mapStock(db.stocks),
       item: {
-        ...this.mapItem(db.stocks.items),
-        paperType: this.mapPaperType(db.stocks.items.paper_types),
-        brand: this.mapBrand(db.stocks.items.brands),
+        ...mapItem(db.stocks.items),
+        paperType: mapPaperType(db.stocks.items.paper_types),
+        brand: db.stocks.items.brands ? mapBrand(db.stocks.items.brands) : null,
       },
     };
 
@@ -455,9 +309,9 @@ export class SlittingService {
     ).map((o) => ({
       ...this.mapOutput(o),
       item: {
-        ...this.mapItem(o.items),
-        paperType: this.mapPaperType(o.items.paper_types),
-        brand: this.mapBrand(o.items.brands),
+        ...mapItem(o.items),
+        paperType: mapPaperType(o.items.paper_types),
+        brand: o.items.brands ? mapBrand(o.items.brands) : null,
       },
     }));
 
@@ -505,7 +359,12 @@ export class SlittingService {
       .order("created_at", { ascending: false })
       .range(search.offset, search.offset + search.limit - 1);
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "fetch slitting schedules",
+        resource: "SlittingSchedule",
+      });
+    }
 
     return {
       data: (data as DbScheduleWithStats[]).map((db) =>
@@ -568,7 +427,7 @@ export class SlittingService {
     if (jobsError) throw new BadRequestException(jobsError.message);
 
     const schedule = this.mapSchedule(scheduleData as DbSchedule);
-    const createdByUser = this.mapUser(
+    const createdByUser = mapUser(
       (scheduleData as { created_by_user: DbUser }).created_by_user,
     )!;
     const jobs = (jobsData as DbJobWithRelations[]).map((db) =>
@@ -850,7 +709,12 @@ export class SlittingService {
       .order("created_at", { ascending: false })
       .range(search.offset, search.offset + search.limit - 1);
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "fetch slitting jobs",
+        resource: "SlittingJob",
+      });
+    }
 
     return {
       data: (data as DbJobWithRelations[]).map((db) =>
@@ -1311,11 +1175,16 @@ export class SlittingService {
       .eq("entity_id", entityId)
       .order("created_at", { ascending: true });
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "fetch slitting history",
+        resource: "SlittingHistory",
+      });
+    }
 
     return (data || []).map((h) => ({
       ...this.mapHistory(h as DbHistory),
-      actor: this.mapUser((h as { actor: DbUser }).actor)!,
+      actor: mapUser((h as { actor: DbUser }).actor)!,
     }));
   }
 }

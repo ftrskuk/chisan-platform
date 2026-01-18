@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import type {
   Warehouse,
   Location,
@@ -14,7 +10,7 @@ import type {
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
-import { buildAuditChanges } from "../../common/utils";
+import { buildAuditChanges, handleSupabaseError } from "../../common/utils";
 
 interface DbWarehouse {
   id: string;
@@ -93,7 +89,12 @@ export class WarehousesService {
       .order("is_default", { ascending: false })
       .order("name");
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "fetch warehouses",
+        resource: "Warehouse",
+      });
+    }
     return (data as DbWarehouse[]).map((db) => this.mapWarehouse(db));
   }
 
@@ -151,7 +152,12 @@ export class WarehousesService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "create warehouse",
+        resource: "Warehouse",
+      });
+    }
 
     const result = this.mapWarehouse(data as DbWarehouse);
 
@@ -212,7 +218,12 @@ export class WarehousesService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "update warehouse",
+        resource: "Warehouse",
+      });
+    }
 
     const result = this.mapWarehouse(data as DbWarehouse);
 
@@ -252,7 +263,12 @@ export class WarehousesService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "deactivate warehouse",
+        resource: "Warehouse",
+      });
+    }
 
     const result = this.mapWarehouse(data as DbWarehouse);
 
@@ -280,7 +296,12 @@ export class WarehousesService {
       .order("type")
       .order("code");
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "fetch locations",
+        resource: "Location",
+      });
+    }
     return ((data as DbLocation[]) ?? []).map((db) => this.mapLocation(db));
   }
 
@@ -305,7 +326,12 @@ export class WarehousesService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "create location",
+        resource: "Location",
+      });
+    }
 
     const result = this.mapLocation(data as DbLocation);
 
@@ -356,7 +382,12 @@ export class WarehousesService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "update location",
+        resource: "Location",
+      });
+    }
 
     const result = this.mapLocation(data as DbLocation);
 

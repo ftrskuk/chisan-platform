@@ -1,49 +1,47 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChevronLeft, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { usePartner, useDeleteBrand } from "@/hooks/api";
+import { useCRUDState } from "@/hooks/use-crud-state";
 import { DataTable } from "@/components/data-table";
 import { brandColumns } from "@/components/partners/brand-columns";
 import { BrandForm } from "@/components/partners/brand-form";
+import { FormSheet } from "@/components/form-sheet";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PageHeader } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import type { Brand } from "@repo/shared";
 
 export default function PartnerBrandsPage() {
   const params = useParams<{ id: string }>();
   const partnerId = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Brand | null>(null);
+  const {
+    formOpen,
+    editing: editingBrand,
+    deleteTarget,
+    openCreate,
+    openEdit,
+    closeForm,
+    openDelete,
+    closeDelete,
+    handleFormOpenChange,
+    handleDeleteOpenChange,
+  } = useCRUDState<Brand>();
 
   const { data: partner, isLoading } = usePartner(partnerId ?? "");
   const deleteMutation = useDeleteBrand(partnerId ?? "");
-
-  const handleEdit = (brand: Brand) => {
-    setEditingBrand(brand);
-    setFormOpen(true);
-  };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
       toast.success("브랜드가 삭제되었습니다.");
-      setDeleteTarget(null);
+      closeDelete();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "삭제 중 오류가 발생했습니다.",
@@ -51,14 +49,9 @@ export default function PartnerBrandsPage() {
     }
   };
 
-  const handleFormSuccess = () => {
-    setFormOpen(false);
-    setEditingBrand(null);
-  };
-
   const columns = brandColumns({
-    onEdit: handleEdit,
-    onDelete: setDeleteTarget,
+    onEdit: openEdit,
+    onDelete: openDelete,
   });
 
   const brands = partner?.brands ?? [];
@@ -76,7 +69,7 @@ export default function PartnerBrandsPage() {
             title={`${partner?.name ?? "거래처"} - 브랜드 관리`}
             description="거래처별 브랜드를 관리합니다."
             action={
-              <Button onClick={() => setFormOpen(true)}>
+              <Button onClick={openCreate}>
                 <Plus className="mr-2 h-4 w-4" />
                 브랜드 추가
               </Button>
@@ -103,38 +96,28 @@ export default function PartnerBrandsPage() {
         ]}
       />
 
-      <Dialog
+      <FormSheet
         open={formOpen}
-        onOpenChange={(open) => {
-          setFormOpen(open);
-          if (!open) setEditingBrand(null);
-        }}
+        onOpenChange={handleFormOpenChange}
+        title={editingBrand ? "브랜드 수정" : "새 브랜드 추가"}
+        description={
+          editingBrand
+            ? "브랜드 정보를 수정합니다."
+            : "새로운 브랜드를 추가합니다."
+        }
       >
-        <DialogContent className="sm:max-w-[560px]">
-          <DialogHeader>
-            <DialogTitle>
-              {editingBrand ? "브랜드 수정" : "새 브랜드 추가"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingBrand
-                ? "브랜드 정보를 수정합니다."
-                : "새로운 브랜드를 추가합니다."}
-            </DialogDescription>
-          </DialogHeader>
-          {partnerId && (
-            <BrandForm
-              partnerId={partnerId}
-              brand={editingBrand}
-              onSuccess={handleFormSuccess}
-              onCancel={() => setFormOpen(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+        {partnerId && (
+          <BrandForm
+            partnerId={partnerId}
+            brand={editingBrand}
+            onSuccess={closeForm}
+          />
+        )}
+      </FormSheet>
 
       <ConfirmDialog
         open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onOpenChange={handleDeleteOpenChange}
         title="브랜드 삭제"
         description={`"${deleteTarget?.name}" 브랜드를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
         onConfirm={handleDelete}

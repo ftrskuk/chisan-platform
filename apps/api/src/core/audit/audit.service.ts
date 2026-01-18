@@ -3,7 +3,6 @@ import {
   Inject,
   Scope,
   Logger,
-  BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
 import { REQUEST } from "@nestjs/core";
@@ -11,6 +10,7 @@ import { Request } from "express";
 import type { AuditCategory } from "@repo/shared";
 import { SupabaseService } from "../supabase/supabase.service";
 import type { RequestUser } from "../auth/types/auth.types";
+import { handleSupabaseError } from "../../common/utils";
 
 interface AuditLogParams {
   action: string;
@@ -144,7 +144,10 @@ export class AuditService {
     const { data, error, count } = await queryBuilder;
 
     if (error) {
-      throw new BadRequestException(error.message);
+      handleSupabaseError(error, {
+        operation: "fetch audit logs",
+        resource: "AuditLog",
+      });
     }
 
     return {

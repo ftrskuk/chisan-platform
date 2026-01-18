@@ -27,15 +27,9 @@ interface BrandFormProps {
   partnerId: string;
   brand?: Brand | null;
   onSuccess: () => void;
-  onCancel: () => void;
 }
 
-export function BrandForm({
-  partnerId,
-  brand,
-  onSuccess,
-  onCancel,
-}: BrandFormProps) {
+export function BrandForm({ partnerId, brand, onSuccess }: BrandFormProps) {
   const isEditing = !!brand;
 
   const form = useForm<CreateBrandInput>({
@@ -129,9 +123,6 @@ export function BrandForm({
         />
 
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            취소
-          </Button>
           <Button type="submit" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEditing ? "수정" : "생성"}

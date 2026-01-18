@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { useItems, useDeleteItem, usePaperTypes } from "@/hooks/api";
+import { useCRUDState } from "@/hooks/use-crud-state";
 import { DataTable } from "@/components/data-table";
 import { itemColumns } from "@/components/items/item-columns";
 import { paperTypeColumns } from "@/components/items/paper-type-columns";
@@ -20,34 +21,38 @@ import type { ItemWithRelations, PaperType } from "@repo/shared";
 export default function ItemsPage() {
   const [activeTab, setActiveTab] = useState("items");
 
-  const [itemFormOpen, setItemFormOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<ItemWithRelations | null>(
-    null,
-  );
-  const [deleteTarget, setDeleteTarget] = useState<ItemWithRelations | null>(
-    null,
-  );
+  const {
+    formOpen: itemFormOpen,
+    editing: editingItem,
+    deleteTarget,
+    openCreate: openItemCreate,
+    openEdit: openItemEdit,
+    closeForm: closeItemForm,
+    openDelete,
+    closeDelete,
+    handleFormOpenChange: handleItemFormOpenChange,
+    handleDeleteOpenChange,
+  } = useCRUDState<ItemWithRelations>();
 
-  const [paperTypeFormOpen, setPaperTypeFormOpen] = useState(false);
-  const [editingPaperType, setEditingPaperType] = useState<PaperType | null>(
-    null,
-  );
+  const {
+    formOpen: paperTypeFormOpen,
+    editing: editingPaperType,
+    openCreate: openPaperTypeCreate,
+    openEdit: openPaperTypeEdit,
+    closeForm: closePaperTypeForm,
+    handleFormOpenChange: handlePaperTypeFormOpenChange,
+  } = useCRUDState<PaperType>();
 
   const { data: items, isLoading: itemsLoading } = useItems();
   const { data: paperTypes, isLoading: paperTypesLoading } = usePaperTypes();
   const deleteMutation = useDeleteItem();
-
-  const handleEditItem = (item: ItemWithRelations) => {
-    setEditingItem(item);
-    setItemFormOpen(true);
-  };
 
   const handleDeleteItem = async () => {
     if (!deleteTarget) return;
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
       toast.success("품목이 삭제되었습니다.");
-      setDeleteTarget(null);
+      closeDelete();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "삭제 중 오류가 발생했습니다.",
@@ -55,28 +60,13 @@ export default function ItemsPage() {
     }
   };
 
-  const handleItemFormSuccess = () => {
-    setItemFormOpen(false);
-    setEditingItem(null);
-  };
-
-  const handleEditPaperType = (paperType: PaperType) => {
-    setEditingPaperType(paperType);
-    setPaperTypeFormOpen(true);
-  };
-
-  const handlePaperTypeFormSuccess = () => {
-    setPaperTypeFormOpen(false);
-    setEditingPaperType(null);
-  };
-
   const itemColumnsConfig = itemColumns({
-    onEdit: handleEditItem,
-    onDelete: setDeleteTarget,
+    onEdit: openItemEdit,
+    onDelete: openDelete,
   });
 
   const paperTypeColumnsConfig = paperTypeColumns({
-    onEdit: handleEditPaperType,
+    onEdit: openPaperTypeEdit,
   });
 
   const paperTypeOptions =
@@ -92,12 +82,12 @@ export default function ItemsPage() {
         description="품목(아이템) 및 지종(Paper Type)을 관리합니다."
         action={
           activeTab === "items" ? (
-            <Button onClick={() => setItemFormOpen(true)}>
+            <Button onClick={openItemCreate}>
               <Plus className="mr-2 h-4 w-4" />
               품목 추가
             </Button>
           ) : (
-            <Button onClick={() => setPaperTypeFormOpen(true)}>
+            <Button onClick={openPaperTypeCreate}>
               <Plus className="mr-2 h-4 w-4" />
               지종 추가
             </Button>
@@ -167,24 +157,18 @@ export default function ItemsPage() {
 
       <FormSheet
         open={itemFormOpen}
-        onOpenChange={(open) => {
-          setItemFormOpen(open);
-          if (!open) setEditingItem(null);
-        }}
+        onOpenChange={handleItemFormOpenChange}
         title={editingItem ? "품목 수정" : "새 품목 추가"}
         description={
           editingItem ? "품목 정보를 수정합니다." : "새로운 품목을 추가합니다."
         }
       >
-        <ItemForm item={editingItem} onSuccess={handleItemFormSuccess} />
+        <ItemForm item={editingItem} onSuccess={closeItemForm} />
       </FormSheet>
 
       <FormSheet
         open={paperTypeFormOpen}
-        onOpenChange={(open) => {
-          setPaperTypeFormOpen(open);
-          if (!open) setEditingPaperType(null);
-        }}
+        onOpenChange={handlePaperTypeFormOpenChange}
         title={editingPaperType ? "지종 수정" : "새 지종 추가"}
         description={
           editingPaperType
@@ -194,13 +178,13 @@ export default function ItemsPage() {
       >
         <PaperTypeForm
           paperType={editingPaperType}
-          onSuccess={handlePaperTypeFormSuccess}
+          onSuccess={closePaperTypeForm}
         />
       </FormSheet>
 
       <ConfirmDialog
         open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onOpenChange={handleDeleteOpenChange}
         title="품목 삭제"
         description={`"${deleteTarget?.displayName}" 품목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
         onConfirm={handleDeleteItem}

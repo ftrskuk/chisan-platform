@@ -1,11 +1,8 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import type { Setting, SettingCategory } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
+import { handleSupabaseError } from "../../common/utils";
 
 interface DbSetting {
   id: string;
@@ -34,7 +31,10 @@ export class SettingsService {
       .order("key");
 
     if (error) {
-      throw new BadRequestException(error.message);
+      handleSupabaseError(error, {
+        operation: "fetch settings",
+        resource: "Setting",
+      });
     }
 
     return (data as DbSetting[]).map(this.mapToSetting);
@@ -50,7 +50,10 @@ export class SettingsService {
       .order("key");
 
     if (error) {
-      throw new BadRequestException(error.message);
+      handleSupabaseError(error, {
+        operation: "fetch settings by category",
+        resource: "Setting",
+      });
     }
 
     return (data as DbSetting[]).map(this.mapToSetting);
@@ -94,7 +97,10 @@ export class SettingsService {
       .eq("key", key);
 
     if (error) {
-      throw new BadRequestException(error.message);
+      handleSupabaseError(error, {
+        operation: "update setting",
+        resource: "Setting",
+      });
     }
 
     await this.auditService.log({

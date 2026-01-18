@@ -7,19 +7,13 @@ import { z } from "zod";
 import type {
   Stock,
   StockWithRelations,
-  StockCondition,
-  StockStatus,
   StockSearchInput,
   StocksResponse,
   StockMovement,
   MovementType,
   MovementReferenceType,
-  Item,
-  PaperType,
-  Brand,
   Location,
   Warehouse,
-  ItemForm,
   LocationType,
   CreateStockInInput,
   StockInResult,
@@ -32,6 +26,17 @@ import type {
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
+import {
+  type DbItem,
+  type DbPaperType,
+  type DbBrand,
+  type DbStock,
+  mapItem,
+  mapPaperType,
+  mapBrand,
+  mapStock,
+} from "../../common/mappers";
+import { handleSupabaseError } from "../../common/utils";
 
 const STOCK_STATUS = {
   AVAILABLE: "available",
@@ -47,68 +52,6 @@ const MOVEMENT_TYPE = {
   MOVE: "move",
   QUARANTINE: "quarantine",
 } as const;
-
-interface DbStock {
-  id: string;
-  item_id: string;
-  location_id: string;
-  width_mm: number;
-  condition: string;
-  quantity: number;
-  weight_kg: number | null;
-  status: string;
-  is_active: boolean;
-  batch_number: string | null;
-  lot_number: string | null;
-  received_at: string | null;
-  parent_stock_id: string | null;
-  source_type: string | null;
-  source_reference_id: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface DbItem {
-  id: string;
-  item_code: string;
-  display_name: string;
-  paper_type_id: string;
-  brand_id: string | null;
-  grammage: number;
-  form: string;
-  core_diameter_inch: number | null;
-  length_mm: number | null;
-  sheets_per_ream: number | null;
-  unit_of_measure: string;
-  is_active: boolean;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface DbPaperType {
-  id: string;
-  code: string;
-  name_en: string;
-  name_ko: string | null;
-  description: string | null;
-  sort_order: number;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface DbBrand {
-  id: string;
-  partner_id: string;
-  code: string;
-  name: string;
-  internal_code: string | null;
-  description: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
 
 interface DbLocation {
   id: string;
@@ -210,79 +153,6 @@ export class StocksService {
     private readonly auditService: AuditService,
   ) {}
 
-  private mapStock(db: DbStock): Stock {
-    return {
-      id: db.id,
-      itemId: db.item_id,
-      locationId: db.location_id,
-      widthMm: db.width_mm,
-      condition: db.condition as StockCondition,
-      quantity: db.quantity,
-      weightKg: db.weight_kg ? Number(db.weight_kg) : null,
-      status: db.status as StockStatus,
-      isActive: db.is_active,
-      batchNumber: db.batch_number,
-      lotNumber: db.lot_number,
-      receivedAt: db.received_at,
-      parentStockId: db.parent_stock_id,
-      sourceType: db.source_type,
-      sourceReferenceId: db.source_reference_id,
-      notes: db.notes,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
-  private mapItem(db: DbItem): Item {
-    return {
-      id: db.id,
-      itemCode: db.item_code,
-      displayName: db.display_name,
-      paperTypeId: db.paper_type_id,
-      brandId: db.brand_id,
-      grammage: db.grammage,
-      form: db.form as ItemForm,
-      coreDiameterInch: db.core_diameter_inch
-        ? Number(db.core_diameter_inch)
-        : null,
-      lengthMm: db.length_mm,
-      sheetsPerReam: db.sheets_per_ream,
-      unitOfMeasure: db.unit_of_measure,
-      isActive: db.is_active,
-      notes: db.notes,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
-  private mapPaperType(db: DbPaperType): PaperType {
-    return {
-      id: db.id,
-      code: db.code,
-      nameEn: db.name_en,
-      nameKo: db.name_ko,
-      description: db.description,
-      sortOrder: db.sort_order,
-      isActive: db.is_active,
-      createdAt: db.created_at,
-    };
-  }
-
-  private mapBrand(db: DbBrand | null): Brand | null {
-    if (!db) return null;
-    return {
-      id: db.id,
-      partnerId: db.partner_id,
-      code: db.code,
-      name: db.name,
-      internalCode: db.internal_code,
-      description: db.description,
-      isActive: db.is_active,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
   private mapLocation(db: DbLocation): Location {
     return {
       id: db.id,
@@ -317,10 +187,10 @@ export class StocksService {
   }
 
   private mapStockWithRelations(db: DbStockWithRelations): StockWithRelations {
-    const stock = this.mapStock(db);
-    const item = this.mapItem(db.items);
-    const paperType = this.mapPaperType(db.items.paper_types);
-    const brand = this.mapBrand(db.items.brands);
+    const stock = mapStock(db);
+    const item = mapItem(db.items);
+    const paperType = mapPaperType(db.items.paper_types);
+    const brand = db.items.brands ? mapBrand(db.items.brands) : null;
     const location = this.mapLocation(db.locations);
     const warehouse = this.mapWarehouse(db.locations.warehouses);
 
@@ -339,74 +209,40 @@ export class StocksService {
   async findAll(search: StockSearchInput): Promise<StocksResponse> {
     const client = this.supabaseService.getServiceClient();
 
-    let query = client.from("stocks").select(
-      `
-        *,
-        items!inner (
-          *,
-          paper_types (*),
-          brands (*)
-        ),
-        locations!inner (
-          *,
-          warehouses (*)
-        )
-      `,
-      { count: "exact" },
-    );
+    const { data, error } = await client.rpc("search_stocks", {
+      p_warehouse_id: search.warehouseId ?? null,
+      p_location_id: search.locationId ?? null,
+      p_item_id: search.itemId ?? null,
+      p_width_mm: search.widthMm ?? null,
+      p_width_min: search.widthMin ?? null,
+      p_width_max: search.widthMax ?? null,
+      p_condition: search.condition ?? null,
+      p_status: search.status ?? null,
+      p_is_active: search.isActive ?? null,
+      p_search_query: search.q ?? null,
+      p_limit: search.limit,
+      p_offset: search.offset,
+    });
 
-    if (search.warehouseId) {
-      query = query.eq("locations.warehouse_id", search.warehouseId);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "search stocks",
+        resource: "Stock",
+      });
     }
-    if (search.locationId) {
-      query = query.eq("location_id", search.locationId);
-    }
-    if (search.itemId) {
-      query = query.eq("item_id", search.itemId);
-    }
-    if (search.widthMm) {
-      query = query.eq("width_mm", search.widthMm);
-    }
-    if (search.widthMin) {
-      query = query.gte("width_mm", search.widthMin);
-    }
-    if (search.widthMax) {
-      query = query.lte("width_mm", search.widthMax);
-    }
-    if (search.condition) {
-      query = query.eq("condition", search.condition);
-    }
-    if (search.status) {
-      query = query.eq("status", search.status);
-    }
-    if (search.isActive !== undefined) {
-      query = query.eq("is_active", search.isActive);
-    }
-    const { data, error, count } = await query
-      .order("created_at", { ascending: false })
-      .range(search.offset, search.offset + search.limit - 1);
 
-    if (error) throw new BadRequestException(error.message);
-
-    let stocks = (data as DbStockWithRelations[]).map((db) =>
-      this.mapStockWithRelations(db),
-    );
-
-    // TODO: Replace with RPC function for proper server-side search with accurate pagination
-    if (search.q) {
-      const q = search.q.toLowerCase();
-      stocks = stocks.filter(
-        (s) =>
-          s.item.itemCode.toLowerCase().includes(q) ||
-          s.item.displayName.toLowerCase().includes(q),
-      );
-    }
+    const result = data as {
+      data: StockWithRelations[];
+      total: number;
+      limit: number;
+      offset: number;
+    };
 
     return {
-      data: stocks,
-      total: search.q ? stocks.length : (count ?? 0),
-      limit: search.limit,
-      offset: search.offset,
+      data: result.data,
+      total: result.total,
+      limit: result.limit,
+      offset: result.offset,
     };
   }
 
@@ -534,7 +370,12 @@ export class StocksService {
       .select()
       .single();
 
-    if (stockError) throw new BadRequestException(stockError.message);
+    if (stockError) {
+      handleSupabaseError(stockError, {
+        operation: "create stock",
+        resource: "Stock",
+      });
+    }
 
     const { data: movementData, error: movementError } = await client
       .from("stock_movements")
@@ -554,7 +395,12 @@ export class StocksService {
       .select()
       .single();
 
-    if (movementError) throw new BadRequestException(movementError.message);
+    if (movementError) {
+      handleSupabaseError(movementError, {
+        operation: "create stock movement",
+        resource: "StockMovement",
+      });
+    }
 
     const stock = await this.findOne(stockData.id);
 
@@ -607,7 +453,10 @@ export class StocksService {
     });
 
     if (error) {
-      throw new BadRequestException(error.message);
+      handleSupabaseError(error, {
+        operation: "bulk stock-in",
+        resource: "Stock",
+      });
     }
 
     const parseResult = BulkStockInRpcResultSchema.safeParse(data);
@@ -715,7 +564,10 @@ export class StocksService {
       .in("id", ids);
 
     if (error) {
-      throw new BadRequestException(error.message);
+      handleSupabaseError(error, {
+        operation: "fetch stocks by IDs",
+        resource: "Stock",
+      });
     }
 
     return (data as DbStockWithRelations[]).map((db) =>
@@ -734,7 +586,10 @@ export class StocksService {
       .in("id", ids);
 
     if (error) {
-      throw new BadRequestException(error.message);
+      handleSupabaseError(error, {
+        operation: "fetch stock movements by IDs",
+        resource: "StockMovement",
+      });
     }
 
     return (data as DbStockMovement[]).map((db) => this.mapMovement(db));
@@ -782,7 +637,10 @@ export class StocksService {
     });
 
     if (error) {
-      throw new BadRequestException(error.message);
+      handleSupabaseError(error, {
+        operation: "bulk stock-out",
+        resource: "Stock",
+      });
     }
 
     const parseResult = BulkStockOutRpcResultSchema.safeParse(data);

@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import type {
   Machine,
   MachineStatus,
@@ -11,6 +7,7 @@ import type {
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
+import { handleSupabaseError } from "../../common/utils";
 
 interface DbMachine {
   id: string;
@@ -55,7 +52,12 @@ export class MachinesService {
       ascending: true,
     });
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "fetch machines",
+        resource: "Machine",
+      });
+    }
 
     return {
       data: (data as DbMachine[]).map((db) => this.mapMachine(db)),
@@ -96,7 +98,12 @@ export class MachinesService {
       .update({ status })
       .eq("id", id);
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "update machine status",
+        resource: "Machine",
+      });
+    }
 
     await this.auditService.log({
       action: "machine_status_updated",

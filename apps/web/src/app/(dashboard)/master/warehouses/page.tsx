@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWarehouses, useDeleteWarehouse } from "@/hooks/api";
+import { useCRUDState } from "@/hooks/use-crud-state";
 import { DataTable } from "@/components/data-table";
 import { warehouseColumns } from "@/components/warehouses/warehouse-columns";
 import { WarehouseForm } from "@/components/warehouses/warehouse-form";
@@ -16,21 +17,24 @@ import { Button } from "@/components/ui/button";
 import type { Warehouse } from "@repo/shared";
 
 export default function WarehousesPage() {
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(
-    null,
-  );
-  const [deleteTarget, setDeleteTarget] = useState<Warehouse | null>(null);
+  const {
+    formOpen,
+    editing: editingWarehouse,
+    deleteTarget,
+    openCreate,
+    openEdit,
+    closeForm,
+    openDelete,
+    closeDelete,
+    handleFormOpenChange,
+    handleDeleteOpenChange,
+  } = useCRUDState<Warehouse>();
+
   const [locationsWarehouse, setLocationsWarehouse] =
     useState<Warehouse | null>(null);
 
   const { data: warehouses, isLoading } = useWarehouses();
   const deleteMutation = useDeleteWarehouse();
-
-  const handleEdit = (warehouse: Warehouse) => {
-    setEditingWarehouse(warehouse);
-    setFormOpen(true);
-  };
 
   const handleManageLocations = (warehouse: Warehouse) => {
     setLocationsWarehouse(warehouse);
@@ -41,7 +45,7 @@ export default function WarehousesPage() {
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
       toast.success("창고가 삭제되었습니다.");
-      setDeleteTarget(null);
+      closeDelete();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "삭제 중 오류가 발생했습니다.",
@@ -49,14 +53,9 @@ export default function WarehousesPage() {
     }
   };
 
-  const handleFormSuccess = () => {
-    setFormOpen(false);
-    setEditingWarehouse(null);
-  };
-
   const columns = warehouseColumns({
-    onEdit: handleEdit,
-    onDelete: setDeleteTarget,
+    onEdit: openEdit,
+    onDelete: openDelete,
     onManageLocations: handleManageLocations,
   });
 
@@ -66,7 +65,7 @@ export default function WarehousesPage() {
         title="창고 관리"
         description="창고 및 로케이션을 관리합니다."
         action={
-          <Button onClick={() => setFormOpen(true)}>
+          <Button onClick={openCreate}>
             <Plus className="mr-2 h-4 w-4" />
             창고 추가
           </Button>
@@ -93,10 +92,7 @@ export default function WarehousesPage() {
 
       <FormSheet
         open={formOpen}
-        onOpenChange={(open) => {
-          setFormOpen(open);
-          if (!open) setEditingWarehouse(null);
-        }}
+        onOpenChange={handleFormOpenChange}
         title={editingWarehouse ? "창고 수정" : "새 창고 추가"}
         description={
           editingWarehouse
@@ -104,10 +100,7 @@ export default function WarehousesPage() {
             : "새로운 창고를 추가합니다."
         }
       >
-        <WarehouseForm
-          warehouse={editingWarehouse}
-          onSuccess={handleFormSuccess}
-        />
+        <WarehouseForm warehouse={editingWarehouse} onSuccess={closeForm} />
       </FormSheet>
 
       <LocationsDialog
@@ -118,7 +111,7 @@ export default function WarehousesPage() {
 
       <ConfirmDialog
         open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onOpenChange={handleDeleteOpenChange}
         title="창고 삭제"
         description={`"${deleteTarget?.name}" 창고를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
         onConfirm={handleDelete}

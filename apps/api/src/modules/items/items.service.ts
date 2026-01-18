@@ -1,13 +1,8 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import type {
   Item,
   Brand,
   PaperType,
-  ItemForm,
   ItemWithRelations,
   CreateItemInput,
   UpdateItemInput,
@@ -17,37 +12,15 @@ import type {
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
-import { type DbBrand, mapBrand } from "../../common/mappers";
-import { buildAuditChanges } from "../../common/utils";
-
-interface DbPaperType {
-  id: string;
-  code: string;
-  name_en: string;
-  name_ko: string | null;
-  description: string | null;
-  sort_order: number;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface DbItem {
-  id: string;
-  item_code: string;
-  display_name: string;
-  paper_type_id: string;
-  brand_id: string | null;
-  grammage: number;
-  form: string;
-  core_diameter_inch: number | null;
-  length_mm: number | null;
-  sheets_per_ream: number | null;
-  unit_of_measure: string;
-  is_active: boolean;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import {
+  type DbBrand,
+  type DbItem,
+  type DbPaperType,
+  mapBrand,
+  mapItem,
+  mapPaperType,
+} from "../../common/mappers";
+import { buildAuditChanges, handleSupabaseError } from "../../common/utils";
 
 @Injectable()
 export class ItemsService {
@@ -55,41 +28,6 @@ export class ItemsService {
     private readonly supabaseService: SupabaseService,
     private readonly auditService: AuditService,
   ) {}
-
-  private mapPaperType(db: DbPaperType): PaperType {
-    return {
-      id: db.id,
-      code: db.code,
-      nameEn: db.name_en,
-      nameKo: db.name_ko,
-      description: db.description,
-      sortOrder: db.sort_order,
-      isActive: db.is_active,
-      createdAt: db.created_at,
-    };
-  }
-
-  private mapItem(db: DbItem): Item {
-    return {
-      id: db.id,
-      itemCode: db.item_code,
-      displayName: db.display_name,
-      paperTypeId: db.paper_type_id,
-      brandId: db.brand_id,
-      grammage: db.grammage,
-      form: db.form as ItemForm,
-      coreDiameterInch: db.core_diameter_inch
-        ? Number(db.core_diameter_inch)
-        : null,
-      lengthMm: db.length_mm,
-      sheetsPerReam: db.sheets_per_ream,
-      unitOfMeasure: db.unit_of_measure,
-      isActive: db.is_active,
-      notes: db.notes,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
 
   async getAllPaperTypes(): Promise<PaperType[]> {
     const client = this.supabaseService.getServiceClient();
@@ -99,8 +37,13 @@ export class ItemsService {
       .select("*")
       .order("sort_order");
 
-    if (error) throw new BadRequestException(error.message);
-    return (data as DbPaperType[]).map((db) => this.mapPaperType(db));
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "fetch paper types",
+        resource: "PaperType",
+      });
+    }
+    return (data as DbPaperType[]).map((db) => mapPaperType(db));
   }
 
   async createPaperType(input: CreatePaperTypeInput): Promise<PaperType> {
@@ -118,9 +61,14 @@ export class ItemsService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "create paper type",
+        resource: "PaperType",
+      });
+    }
 
-    const result = this.mapPaperType(data as DbPaperType);
+    const result = mapPaperType(data as DbPaperType);
 
     await this.auditService.log({
       action: "paper_type_created",
@@ -164,9 +112,14 @@ export class ItemsService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "update paper type",
+        resource: "PaperType",
+      });
+    }
 
-    const result = this.mapPaperType(data as DbPaperType);
+    const result = mapPaperType(data as DbPaperType);
 
     const existingRecord = existing as unknown as Record<string, unknown>;
     const inputRecord = input as unknown as Record<string, unknown>;
@@ -222,8 +175,13 @@ export class ItemsService {
 
     const { data, error } = await query.order("display_name");
 
-    if (error) throw new BadRequestException(error.message);
-    return (data as DbItem[]).map((db) => this.mapItem(db));
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "fetch items",
+        resource: "Item",
+      });
+    }
+    return (data as DbItem[]).map((db) => mapItem(db));
   }
 
   async findOne(id: string): Promise<ItemWithRelations> {
@@ -240,7 +198,7 @@ export class ItemsService {
     }
 
     const dbItem = item as DbItem;
-    const mappedItem = this.mapItem(dbItem);
+    const mappedItem = mapItem(dbItem);
 
     const { data: paperType } = await client
       .from("paper_types")
@@ -262,7 +220,7 @@ export class ItemsService {
 
     return {
       ...mappedItem,
-      paperType: this.mapPaperType(paperType as DbPaperType),
+      paperType: mapPaperType(paperType as DbPaperType),
       brand,
     };
   }
@@ -288,9 +246,14 @@ export class ItemsService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "create item",
+        resource: "Item",
+      });
+    }
 
-    const result = this.mapItem(data as DbItem);
+    const result = mapItem(data as DbItem);
 
     await this.auditService.log({
       action: "item_created",
@@ -348,9 +311,14 @@ export class ItemsService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "update item",
+        resource: "Item",
+      });
+    }
 
-    const result = this.mapItem(data as DbItem);
+    const result = mapItem(data as DbItem);
 
     const changes = buildAuditChanges(
       existing as Record<string, unknown>,
@@ -392,9 +360,14 @@ export class ItemsService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "deactivate item",
+        resource: "Item",
+      });
+    }
 
-    const result = this.mapItem(data as DbItem);
+    const result = mapItem(data as DbItem);
 
     await this.auditService.log({
       action: "item_deactivated",

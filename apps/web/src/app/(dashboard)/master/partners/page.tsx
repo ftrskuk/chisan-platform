@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { usePartners, useDeletePartner } from "@/hooks/api";
+import { useCRUDState } from "@/hooks/use-crud-state";
 import { DataTable } from "@/components/data-table";
 import { partnerColumns } from "@/components/partners/partner-columns";
 import { PartnerForm } from "@/components/partners/partner-form";
@@ -16,19 +16,23 @@ import { Button } from "@/components/ui/button";
 import type { Partner } from "@repo/shared";
 
 export default function PartnersPage() {
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Partner | null>(null);
+  const {
+    formOpen,
+    editing: editingPartner,
+    deleteTarget,
+    openCreate,
+    openEdit,
+    closeForm,
+    openDelete,
+    closeDelete,
+    handleFormOpenChange,
+    handleDeleteOpenChange,
+  } = useCRUDState<Partner>();
 
   const router = useRouter();
 
   const { data: partners, isLoading } = usePartners();
   const deleteMutation = useDeletePartner();
-
-  const handleEdit = (partner: Partner) => {
-    setEditingPartner(partner);
-    setFormOpen(true);
-  };
 
   const handleManageBrands = (partner: Partner) => {
     router.push(`/master/partners/${partner.id}/brands`);
@@ -39,7 +43,7 @@ export default function PartnersPage() {
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
       toast.success("거래처가 삭제되었습니다.");
-      setDeleteTarget(null);
+      closeDelete();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "삭제 중 오류가 발생했습니다.",
@@ -47,14 +51,9 @@ export default function PartnersPage() {
     }
   };
 
-  const handleFormSuccess = () => {
-    setFormOpen(false);
-    setEditingPartner(null);
-  };
-
   const columns = partnerColumns({
-    onEdit: handleEdit,
-    onDelete: setDeleteTarget,
+    onEdit: openEdit,
+    onDelete: openDelete,
     onManageBrands: handleManageBrands,
   });
 
@@ -64,7 +63,7 @@ export default function PartnersPage() {
         title="거래처 관리"
         description="공급업체 및 고객 거래처를 관리합니다."
         action={
-          <Button onClick={() => setFormOpen(true)}>
+          <Button onClick={openCreate}>
             <Plus className="mr-2 h-4 w-4" />
             거래처 추가
           </Button>
@@ -100,10 +99,7 @@ export default function PartnersPage() {
 
       <FormSheet
         open={formOpen}
-        onOpenChange={(open) => {
-          setFormOpen(open);
-          if (!open) setEditingPartner(null);
-        }}
+        onOpenChange={handleFormOpenChange}
         title={editingPartner ? "거래처 수정" : "새 거래처 추가"}
         description={
           editingPartner
@@ -111,12 +107,12 @@ export default function PartnersPage() {
             : "새로운 거래처를 추가합니다."
         }
       >
-        <PartnerForm partner={editingPartner} onSuccess={handleFormSuccess} />
+        <PartnerForm partner={editingPartner} onSuccess={closeForm} />
       </FormSheet>
 
       <ConfirmDialog
         open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onOpenChange={handleDeleteOpenChange}
         title="거래처 삭제"
         description={`"${deleteTarget?.name}" 거래처를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
         onConfirm={handleDelete}

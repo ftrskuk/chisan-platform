@@ -15,32 +15,13 @@ import type {
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
-import { type DbBrand, mapBrand } from "../../common/mappers";
-import { buildAuditChanges } from "../../common/utils";
-
-interface DbPartner {
-  id: string;
-  partner_code: string;
-  name: string;
-  name_local: string | null;
-  partner_type: string;
-  country_code: string;
-  address: string | null;
-  city: string | null;
-  contact_name: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  supplier_currency: string | null;
-  supplier_payment_terms: string | null;
-  lead_time_days: number | null;
-  customer_currency: string | null;
-  customer_payment_terms: string | null;
-  credit_limit: number | null;
-  is_active: boolean;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import {
+  type DbBrand,
+  type DbPartner,
+  mapBrand,
+  mapPartner,
+} from "../../common/mappers";
+import { buildAuditChanges, handleSupabaseError } from "../../common/utils";
 
 @Injectable()
 export class PartnersService {
@@ -48,32 +29,6 @@ export class PartnersService {
     private readonly supabaseService: SupabaseService,
     private readonly auditService: AuditService,
   ) {}
-
-  private mapPartner(db: DbPartner): Partner {
-    return {
-      id: db.id,
-      partnerCode: db.partner_code,
-      name: db.name,
-      nameLocal: db.name_local,
-      partnerType: db.partner_type as PartnerType,
-      countryCode: db.country_code,
-      address: db.address,
-      city: db.city,
-      contactName: db.contact_name,
-      contactEmail: db.contact_email,
-      contactPhone: db.contact_phone,
-      supplierCurrency: db.supplier_currency,
-      supplierPaymentTerms: db.supplier_payment_terms,
-      leadTimeDays: db.lead_time_days,
-      customerCurrency: db.customer_currency,
-      customerPaymentTerms: db.customer_payment_terms,
-      creditLimit: db.credit_limit ? Number(db.credit_limit) : null,
-      isActive: db.is_active,
-      notes: db.notes,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
 
   async findAll(type?: PartnerType): Promise<Partner[]> {
     const client = this.supabaseService.getServiceClient();
@@ -84,8 +39,13 @@ export class PartnersService {
     }
 
     const { data, error } = await query;
-    if (error) throw new BadRequestException(error.message);
-    return (data as DbPartner[]).map((db) => this.mapPartner(db));
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "fetch partners",
+        resource: "Partner",
+      });
+    }
+    return (data as DbPartner[]).map((db) => mapPartner(db));
   }
 
   async findSuppliers(): Promise<Partner[]> {
@@ -116,7 +76,7 @@ export class PartnersService {
       .order("name");
 
     return {
-      ...this.mapPartner(partner as DbPartner),
+      ...mapPartner(partner as DbPartner),
       brands: ((brands as DbBrand[]) ?? []).map((db) => mapBrand(db)),
     };
   }
@@ -148,9 +108,14 @@ export class PartnersService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "create partner",
+        resource: "Partner",
+      });
+    }
 
-    const result = this.mapPartner(data as DbPartner);
+    const result = mapPartner(data as DbPartner);
 
     await this.auditService.log({
       action: "partner_created",
@@ -219,9 +184,14 @@ export class PartnersService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "update partner",
+        resource: "Partner",
+      });
+    }
 
-    const result = this.mapPartner(data as DbPartner);
+    const result = mapPartner(data as DbPartner);
 
     const existingRecord = existing as unknown as Record<string, unknown>;
     const inputRecord = input as unknown as Record<string, unknown>;
@@ -267,9 +237,14 @@ export class PartnersService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "deactivate partner",
+        resource: "Partner",
+      });
+    }
 
-    const result = this.mapPartner(data as DbPartner);
+    const result = mapPartner(data as DbPartner);
 
     await this.auditService.log({
       action: "partner_deactivated",
@@ -290,7 +265,12 @@ export class PartnersService {
       .select("*")
       .order("name");
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "fetch all brands",
+        resource: "Brand",
+      });
+    }
     return ((data as DbBrand[]) ?? []).map((db) => mapBrand(db));
   }
 
@@ -305,7 +285,12 @@ export class PartnersService {
       .eq("partner_id", partnerId)
       .order("name");
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "fetch partner brands",
+        resource: "Brand",
+      });
+    }
     return ((data as DbBrand[]) ?? []).map((db) => mapBrand(db));
   }
 
@@ -331,7 +316,12 @@ export class PartnersService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "create brand",
+        resource: "Brand",
+      });
+    }
 
     const result = mapBrand(data as DbBrand);
 
@@ -377,7 +367,12 @@ export class PartnersService {
       .select()
       .single();
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) {
+      handleSupabaseError(error, {
+        operation: "update brand",
+        resource: "Brand",
+      });
+    }
 
     const result = mapBrand(data as DbBrand);
 
