@@ -17,6 +17,9 @@ import {
   ClipboardList,
   ClipboardCheck,
   Truck,
+  Scissors,
+  ListTodo,
+  Cog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -102,6 +105,26 @@ const navigation: NavEntry[] = [
         href: "/inventory/stock-out",
         label: "재고 출고",
         icon: <PackageMinus className="h-[18px] w-[18px]" />,
+      },
+    ],
+  },
+  {
+    title: "생산 관리",
+    items: [
+      {
+        href: "/production/slitting",
+        label: "슬리팅 일정",
+        icon: <Scissors className="h-[18px] w-[18px]" />,
+      },
+      {
+        href: "/production/slitting/jobs",
+        label: "작업 대기열",
+        icon: <ListTodo className="h-[18px] w-[18px]" />,
+      },
+      {
+        href: "/production/machines",
+        label: "기계 현황",
+        icon: <Cog className="h-[18px] w-[18px]" />,
       },
     ],
   },

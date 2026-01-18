@@ -8,3 +8,4 @@ export * from "./use-audit-logs";
 export * from "./use-settings";
 export * from "./use-stocks";
 export * from "./use-orders";
+export * from "./use-slitting";
