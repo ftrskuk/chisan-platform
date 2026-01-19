@@ -9,3 +9,4 @@ export * from "./use-settings";
 export * from "./use-stocks";
 export * from "./use-orders";
 export * from "./use-slitting";
+export * from "./use-slitting-worker";

@@ -15,6 +15,7 @@ import {
   createScheduleSchema,
   updateScheduleSchema,
   createJobSchema,
+  createJobV2Schema,
   updateJobSchema,
   markJobReadySchema,
   startJobSchema,
@@ -29,6 +30,7 @@ import type {
   CreateScheduleInput,
   UpdateScheduleInput,
   CreateJobInput,
+  CreateJobV2Input,
   UpdateJobInput,
   MarkJobReadyInput,
   StartJobInput,
@@ -123,6 +125,15 @@ export class SlittingController {
     @CurrentUser() user: RequestUser,
   ) {
     return this.slittingService.createJob(input, user.id);
+  }
+
+  @Post("jobs/v2")
+  @Roles(...ADMIN_MANAGER_ROLES)
+  createJobV2(
+    @Body(new ZodValidationPipe(createJobV2Schema)) input: CreateJobV2Input,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.slittingService.createJobV2(input, user.id);
   }
 
   @Patch("jobs/:id")

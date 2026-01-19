@@ -3,9 +3,12 @@
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { DataTableColumnHeader } from "@/components/data-table";
+import { Badge } from "@/components/ui/badge";
 import { JobStatusBadge } from "./job-status-badge";
 import { JobActions } from "./job-actions";
 import type { SlittingJobWithRelations } from "@repo/shared";
+
+import { isV2SlittingJob, formatItemLabel } from "@/lib/slitting-utils";
 
 export function scheduleJobColumns(): ColumnDef<SlittingJobWithRelations>[] {
   return [
@@ -14,14 +17,24 @@ export function scheduleJobColumns(): ColumnDef<SlittingJobWithRelations>[] {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="#순서" />
       ),
-      cell: ({ row }) => (
-        <Link
-          href={`/production/slitting/jobs/${row.original.id}`}
-          className="font-mono text-sm text-primary hover:underline"
-        >
-          #{row.original.sequenceNumber}
-        </Link>
-      ),
+      cell: ({ row }) => {
+        const isV2 = isV2SlittingJob(row.original);
+        return (
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/production/slitting/jobs/${row.original.id}`}
+              className="font-mono text-sm text-primary hover:underline"
+            >
+              #{row.original.sequenceNumber}
+            </Link>
+            {isV2 && (
+              <Badge variant="outline" className="text-xs px-1.5 py-0">
+                V2
+              </Badge>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "machine.name",
@@ -34,16 +47,30 @@ export function scheduleJobColumns(): ColumnDef<SlittingJobWithRelations>[] {
       id: "parentStock",
       header: "원지정보",
       cell: ({ row }) => {
-        const stock = row.original.parentStock;
-        const item = stock?.item;
+        const job = row.original;
+
+        if (isV2SlittingJob(job)) {
+          const registeredRolls = job.jobRolls?.length ?? 0;
+          const completedRolls =
+            job.jobRolls?.filter((r) => r.status === "completed").length ?? 0;
+
+          return (
+            <div className="flex flex-col text-sm">
+              <span className="font-medium">{formatItemLabel(job.item)}</span>
+              <span className="text-muted-foreground text-xs">
+                {job.parentWidthMm}mm | 롤 {completedRolls}/{registeredRolls}/
+                {job.plannedRollCount}
+              </span>
+            </div>
+          );
+        }
+
+        const stock = job.parentStock;
         return (
           <div className="flex flex-col text-sm">
-            <span className="font-medium">
-              {item?.paperType.nameKo ?? item?.paperType.nameEn ?? "-"}{" "}
-              {item?.grammage ? `${item.grammage}g` : ""}
-            </span>
+            <span className="font-medium">{formatItemLabel(stock?.item)}</span>
             <span className="text-muted-foreground text-xs">
-              {item?.brand?.name ?? "-"} |{" "}
+              {stock?.item?.brand?.name ?? "-"} |{" "}
               {stock?.widthMm ? `${stock.widthMm}mm` : "-"}
             </span>
           </div>

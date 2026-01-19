@@ -1,14 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Plus, Trash2, Package, Scale, Ruler } from "lucide-react";
 import { z } from "zod";
-import type { SlittingJobWithRelations } from "@repo/shared";
-
 import { useCompleteSlittingJob, useItems } from "@/hooks/api";
+import { type V1SlittingJob, formatItemLabel } from "@/lib/slitting-utils";
 import {
   Form,
   FormControl,
@@ -50,7 +49,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface CompleteJobFormProps {
-  job: SlittingJobWithRelations;
+  job: V1SlittingJob;
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -88,7 +87,7 @@ export function CompleteJobForm({
     name: "outputs",
   });
 
-  const outputs = form.watch("outputs");
+  const outputs = useWatch({ control: form.control, name: "outputs" });
 
   const totals = useMemo(() => {
     const totalQty = outputs.reduce((sum, o) => sum + (o.quantity || 0), 0);
@@ -135,12 +134,7 @@ export function CompleteJobForm({
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground text-xs">품목</p>
-                <p className="font-medium">
-                  {parentItem.paperType?.nameKo ??
-                    parentItem.paperType?.nameEn ??
-                    parentItem.displayName}{" "}
-                  {parentItem.grammage}g
-                </p>
+                <p className="font-medium">{formatItemLabel(parentItem)}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">폭</p>
@@ -197,10 +191,7 @@ export function CompleteJobForm({
                                 <SelectContent>
                                   {activeItems.map((item) => (
                                     <SelectItem key={item.id} value={item.id}>
-                                      {item.paperType?.nameKo ??
-                                        item.paperType?.nameEn ??
-                                        item.displayName}{" "}
-                                      {item.grammage}g
+                                      {formatItemLabel(item)}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>

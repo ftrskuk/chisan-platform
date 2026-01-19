@@ -3,6 +3,7 @@ import {
   MACHINE_STATUSES,
   SCHEDULE_STATUSES,
   JOB_STATUSES,
+  JOB_ROLL_STATUSES,
   SLITTING_ENTITY_TYPES,
   SLITTING_HISTORY_ACTIONS,
 } from "../types/slitting";
@@ -10,6 +11,7 @@ import {
 export const machineStatusSchema = z.enum(MACHINE_STATUSES);
 export const scheduleStatusSchema = z.enum(SCHEDULE_STATUSES);
 export const jobStatusSchema = z.enum(JOB_STATUSES);
+export const jobRollStatusSchema = z.enum(JOB_ROLL_STATUSES);
 export const slittingEntityTypeSchema = z.enum(SLITTING_ENTITY_TYPES);
 export const slittingHistoryActionSchema = z.enum(SLITTING_HISTORY_ACTIONS);
 
@@ -93,6 +95,29 @@ export const createJobSchema = z.object({
 
 export type CreateJobInput = z.infer<typeof createJobSchema>;
 
+export const plannedOutputSchema = z.object({
+  itemId: z.string().uuid(),
+  widthMm: z.coerce.number().int().min(50).max(2500),
+  quantity: z.coerce.number().int().positive(),
+  notes: z.string().max(500).optional(),
+});
+
+export type PlannedOutputInput = z.infer<typeof plannedOutputSchema>;
+
+export const createJobV2Schema = z.object({
+  scheduleId: z.string().uuid(),
+  machineId: z.string().uuid(),
+  itemId: z.string().uuid(),
+  parentWidthMm: z.coerce.number().int().min(50).max(2500),
+  plannedRollCount: z.coerce.number().int().min(1).max(100).default(1),
+  plannedOutputs: z.array(plannedOutputSchema).min(1).max(50),
+  operatorId: z.string().uuid().optional(),
+  sequenceNumber: z.coerce.number().int().min(1).optional(),
+  memo: z.string().max(1000).optional(),
+});
+
+export type CreateJobV2Input = z.infer<typeof createJobV2Schema>;
+
 export const updateJobSchema = z.object({
   machineId: z.string().uuid().optional(),
   operatorId: z.string().uuid().nullable().optional(),
@@ -101,6 +126,14 @@ export const updateJobSchema = z.object({
 });
 
 export type UpdateJobInput = z.infer<typeof updateJobSchema>;
+
+export const updatePlannedOutputsSchema = z.object({
+  plannedOutputs: z.array(plannedOutputSchema).min(1).max(50),
+});
+
+export type UpdatePlannedOutputsInput = z.infer<
+  typeof updatePlannedOutputsSchema
+>;
 
 export const markJobReadySchema = z.object({
   memo: z.string().max(1000).optional(),
@@ -154,3 +187,83 @@ export const cancelScheduleSchema = z.object({
 });
 
 export type CancelScheduleInput = z.infer<typeof cancelScheduleSchema>;
+
+export const registerRollSchema = z.object({
+  stockId: z.string().uuid(),
+  notes: z.string().max(500).optional(),
+});
+
+export type RegisterRollInput = z.infer<typeof registerRollSchema>;
+
+export const startRollSchema = z.object({
+  notes: z.string().max(500).optional(),
+});
+
+export type StartRollInput = z.infer<typeof startRollSchema>;
+
+export const recordActualOutputSchema = z.object({
+  plannedOutputId: z.string().uuid().optional(),
+  itemId: z.string().uuid(),
+  widthMm: z.coerce.number().int().min(50).max(2500),
+  quantity: z.coerce.number().int().positive(),
+  lengthM: z.coerce.number().positive().optional(),
+  weightKg: z.coerce.number().positive().optional(),
+  isLoss: z.boolean().default(false),
+  notes: z.string().max(500).optional(),
+});
+
+export type RecordActualOutputInput = z.infer<typeof recordActualOutputSchema>;
+
+export const updateActualOutputSchema = z.object({
+  widthMm: z.coerce.number().int().min(50).max(2500).optional(),
+  quantity: z.coerce.number().int().positive().optional(),
+  lengthM: z.coerce.number().positive().nullable().optional(),
+  weightKg: z.coerce.number().positive().nullable().optional(),
+  notes: z.string().max(500).nullable().optional(),
+});
+
+export type UpdateActualOutputInput = z.infer<typeof updateActualOutputSchema>;
+
+export const completeRollSchema = z.object({
+  notes: z.string().max(500).optional(),
+});
+
+export type CompleteRollInput = z.infer<typeof completeRollSchema>;
+
+export const cancelRollSchema = z.object({
+  reason: z.string().min(1).max(500),
+});
+
+export type CancelRollInput = z.infer<typeof cancelRollSchema>;
+
+export const completeJobV2Schema = z.object({
+  memo: z.string().max(1000).optional(),
+});
+
+export type CompleteJobV2Input = z.infer<typeof completeJobV2Schema>;
+
+export const workerJobSearchSchema = z.object({
+  scheduledDate: z.string().optional(),
+  machineId: z.string().uuid().optional(),
+  status: jobStatusSchema.optional(),
+  statuses: z
+    .string()
+    .transform(
+      (val) =>
+        val.split(",").filter(Boolean) as Array<(typeof JOB_STATUSES)[number]>,
+    )
+    .optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export type WorkerJobSearchInput = z.infer<typeof workerJobSearchSchema>;
+
+export const jobRollSearchSchema = z.object({
+  jobId: z.string().uuid(),
+  status: jobRollStatusSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export type JobRollSearchInput = z.infer<typeof jobRollSearchSchema>;

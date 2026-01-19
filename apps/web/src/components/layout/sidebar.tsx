@@ -21,6 +21,7 @@ import {
   Scissors,
   ListTodo,
   Cog,
+  HardHat,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -121,6 +122,11 @@ const navigation: NavEntry[] = [
         href: "/production/slitting/jobs",
         label: "작업 대기열",
         icon: <ListTodo className="h-[18px] w-[18px]" />,
+      },
+      {
+        href: "/production/slitting/worker",
+        label: "작업자 화면",
+        icon: <HardHat className="h-[18px] w-[18px]" />,
       },
       {
         href: "/production/machines",

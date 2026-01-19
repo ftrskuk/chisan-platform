@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plus, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -14,17 +14,19 @@ import { LoadingButton } from "@/components/loading-button";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { FormSheet } from "@/components/form-sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScheduleInfoCard } from "@/components/slitting/schedule-info-card";
 import { scheduleJobColumns } from "@/components/slitting/schedule-job-columns";
 import { JobForm } from "@/components/slitting/job-form";
+import { JobFormV2 } from "@/components/slitting/job-form-v2";
 
 export default function ScheduleDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const scheduleId = params.id;
 
   const [isJobFormOpen, setIsJobFormOpen] = useState(false);
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+  const [jobFormVersion, setJobFormVersion] = useState<"v1" | "v2">("v2");
 
   const { data: schedule, isLoading, error } = useSlittingSchedule(scheduleId);
   const publishMutation = usePublishSlittingSchedule();
@@ -48,7 +50,7 @@ export default function ScheduleDetailPage() {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Link href="/production/slitting">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="뒤로 가기">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
@@ -87,7 +89,12 @@ export default function ScheduleDetailPage() {
     <div className="space-y-6">
       <div className="flex items-start gap-4">
         <Link href="/production/slitting">
-          <Button variant="ghost" size="icon" className="mt-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mt-1"
+            aria-label="뒤로 가기"
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
@@ -138,10 +145,32 @@ export default function ScheduleDetailPage() {
         title="작업 추가"
         description="새 슬리팅 작업을 추가합니다."
       >
-        <JobForm
-          scheduleId={scheduleId}
-          onSuccess={() => setIsJobFormOpen(false)}
-        />
+        <Tabs
+          value={jobFormVersion}
+          onValueChange={(v) => {
+            if (v === "v1" || v === "v2") {
+              setJobFormVersion(v);
+            }
+          }}
+          className="w-full"
+        >
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="v2">V2 (롤 기반)</TabsTrigger>
+            <TabsTrigger value="v1">V1 (재고 기반)</TabsTrigger>
+          </TabsList>
+          <TabsContent value="v2">
+            <JobFormV2
+              scheduleId={scheduleId}
+              onSuccess={() => setIsJobFormOpen(false)}
+            />
+          </TabsContent>
+          <TabsContent value="v1">
+            <JobForm
+              scheduleId={scheduleId}
+              onSuccess={() => setIsJobFormOpen(false)}
+            />
+          </TabsContent>
+        </Tabs>
       </FormSheet>
 
       <ConfirmDialog

@@ -65,6 +65,13 @@ export const api = {
       ...options,
     }),
 
+  put: <T>(path: string, data?: unknown, options?: FetchOptions) =>
+    apiFetch<T>(path, {
+      method: "PUT",
+      body: JSON.stringify(data),
+      ...options,
+    }),
+
   delete: <T>(path: string, options?: FetchOptions) =>
     apiFetch<T>(path, { method: "DELETE", ...options }),
 };

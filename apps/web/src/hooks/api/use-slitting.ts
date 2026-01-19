@@ -17,6 +17,7 @@ import type {
   CreateScheduleInput,
   UpdateScheduleInput,
   CreateJobInput,
+  CreateJobV2Input,
   MarkJobReadyInput,
   StartJobInput,
   CompleteJobInput,
@@ -259,6 +260,19 @@ export function useApproveSlittingJob() {
       queryClient.invalidateQueries({ queryKey: JOBS_KEY });
       queryClient.invalidateQueries({ queryKey: SCHEDULES_KEY });
       queryClient.invalidateQueries({ queryKey: ["stocks"] });
+    },
+  });
+}
+
+export function useCreateSlittingJobV2() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateJobV2Input) =>
+      api.post<SlittingJobResult>("/api/v1/slitting/jobs/v2", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: JOBS_KEY });
+      queryClient.invalidateQueries({ queryKey: SCHEDULES_KEY });
     },
   });
 }

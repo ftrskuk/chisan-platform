@@ -23,6 +23,14 @@ export const JOB_STATUSES = [
 ] as const;
 export type JobStatus = (typeof JOB_STATUSES)[number];
 
+export const JOB_ROLL_STATUSES = [
+  "registered",
+  "in_progress",
+  "completed",
+  "cancelled",
+] as const;
+export type JobRollStatus = (typeof JOB_ROLL_STATUSES)[number];
+
 export const SLITTING_ENTITY_TYPES = ["schedule", "job"] as const;
 export type SlittingEntityType = (typeof SLITTING_ENTITY_TYPES)[number];
 
@@ -62,7 +70,11 @@ export interface SlittingJob {
   id: string;
   scheduleId: string;
   machineId: string;
-  parentStockId: string;
+  /** @deprecated V1 field - Use slitting_job_rolls for V2 jobs */
+  parentStockId: string | null;
+  itemId: string | null;
+  parentWidthMm: number | null;
+  plannedRollCount: number;
   operatorId: string | null;
   sequenceNumber: number;
   status: JobStatus;
@@ -75,7 +87,33 @@ export interface SlittingJob {
   updatedAt: string;
 }
 
-export interface SlittingOutput {
+export interface SlittingPlannedOutput {
+  id: string;
+  jobId: string;
+  itemId: string;
+  widthMm: number;
+  quantity: number;
+  sequenceNumber: number;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface SlittingJobRoll {
+  id: string;
+  jobId: string;
+  stockId: string;
+  sequenceNumber: number;
+  status: JobRollStatus;
+  registeredAt: string;
+  registeredBy: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SlittingActualOutput {
   id: string;
   jobId: string;
   itemId: string;
@@ -86,7 +124,16 @@ export interface SlittingOutput {
   isLoss: boolean;
   notes: string | null;
   createdAt: string;
+  jobRollId: string | null;
+  plannedOutputId: string | null;
+  lengthM: number | null;
+  rollId: string | null;
+  recordedBy: string | null;
+  recordedAt: string | null;
 }
+
+/** @deprecated Use SlittingActualOutput instead */
+export type SlittingOutput = SlittingActualOutput;
 
 export interface SlittingHistory {
   id: string;
@@ -101,19 +148,41 @@ export interface SlittingHistory {
   createdAt: string;
 }
 
-export interface SlittingOutputWithRelations extends SlittingOutput {
+export interface SlittingPlannedOutputWithRelations extends SlittingPlannedOutput {
   item: Item & { paperType: PaperType; brand: Brand | null };
 }
+
+export interface SlittingJobRollWithRelations extends SlittingJobRoll {
+  stock: Stock & { item: Item & { paperType: PaperType; brand: Brand | null } };
+  registeredByUser: Pick<User, "id" | "displayName" | "email">;
+  actualOutputs?: SlittingActualOutputWithRelations[];
+}
+
+export interface SlittingActualOutputWithRelations extends SlittingActualOutput {
+  item: Item & { paperType: PaperType; brand: Brand | null };
+  jobRoll?: SlittingJobRoll;
+  plannedOutput?: SlittingPlannedOutput;
+  recordedByUser?: Pick<User, "id" | "displayName" | "email">;
+}
+
+/** @deprecated Use SlittingActualOutputWithRelations instead */
+export type SlittingOutputWithRelations = SlittingActualOutputWithRelations;
 
 export interface SlittingJobWithRelations extends SlittingJob {
   schedule: SlittingSchedule;
   machine: Machine;
-  parentStock: Stock & {
-    item: Item & { paperType: PaperType; brand: Brand | null };
-  };
+  /** @deprecated V1 field - null for V2 jobs */
+  parentStock:
+    | (Stock & { item: Item & { paperType: PaperType; brand: Brand | null } })
+    | null;
+  item: (Item & { paperType: PaperType; brand: Brand | null }) | null;
   operator: Pick<User, "id" | "displayName" | "email"> | null;
   approvedByUser: Pick<User, "id" | "displayName" | "email"> | null;
-  outputs: SlittingOutputWithRelations[];
+  /** @deprecated Use actualOutputs instead */
+  outputs: SlittingActualOutputWithRelations[];
+  plannedOutputs?: SlittingPlannedOutputWithRelations[];
+  jobRolls?: SlittingJobRollWithRelations[];
+  actualOutputs?: SlittingActualOutputWithRelations[];
 }
 
 export interface SlittingScheduleWithRelations extends SlittingSchedule {
@@ -135,6 +204,9 @@ export interface SlittingScheduleWithStats extends SlittingSchedule {
   inProgressJobs: number;
   completedJobs: number;
   approvedJobs: number;
+  totalPlannedRolls: number;
+  totalRegisteredRolls: number;
+  totalCompletedRolls: number;
 }
 
 export interface SlittingHistoryWithActor extends SlittingHistory {
@@ -187,4 +259,78 @@ export interface ApproveJobResult {
     quantity: number;
     weightKg: number | null;
   }>;
+}
+
+export interface ApproveJobV2Result {
+  success: boolean;
+  version: "v2";
+  jobId: string;
+  processedRolls: number;
+  totalInputWeight: number;
+  totalOutputQty: number;
+  totalOutputWeight: number;
+  totalLossQty: number;
+  totalLossWeight: number;
+  lossPercentage: number;
+  rolls: Array<{
+    jobRollId: string;
+    stockId: string;
+    sequenceNumber: number;
+    parentWeightKg: number | null;
+    outputs: Array<{
+      outputId: string;
+      stockId: string;
+      movementId: string;
+      batchNumber: string;
+      widthMm: number;
+      quantity: number;
+      weightKg: number | null;
+    }>;
+  }>;
+}
+
+export interface SlittingVarianceAnalysis {
+  jobId: string;
+  scheduleId: string;
+  scheduledDate: string;
+  plannedOutputId: string;
+  itemId: string;
+  itemName: string;
+  plannedWidthMm: number;
+  plannedQuantity: number;
+  actualCount: number;
+  actualQuantity: number;
+  actualWeightKg: number;
+  lossQuantity: number;
+  lossWeightKg: number;
+  quantityVariance: number;
+  avgActualWidthMm: number;
+  avgWidthVarianceMm: number;
+}
+
+export interface SlittingLossAnalysis {
+  jobId: string;
+  scheduleId: string;
+  scheduledDate: string;
+  jobRollId: string;
+  rollSequence: number;
+  stockId: string;
+  stockBatchNumber: string | null;
+  inputWeightKg: number | null;
+  outputWeightKg: number;
+  lossWeightKg: number;
+  lossPercentage: number;
+  outputCount: number;
+  lossCount: number;
+  completedAt: string | null;
+}
+
+export interface SlittingMonthlyLossSummary {
+  month: string;
+  totalJobs: number;
+  totalRolls: number;
+  totalInputWeightKg: number;
+  totalOutputWeightKg: number;
+  totalLossWeightKg: number;
+  lossRatePct: number;
 }
