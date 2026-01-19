@@ -235,8 +235,10 @@ export function JobForm({ scheduleId, onSuccess }: JobFormProps) {
             <FormItem>
               <FormLabel>작업자 (선택)</FormLabel>
               <Select
-                onValueChange={(val) => field.onChange(val || undefined)}
-                value={field.value ?? ""}
+                onValueChange={(val) =>
+                  field.onChange(val === "__none__" ? undefined : val)
+                }
+                value={field.value ?? "__none__"}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -244,7 +246,7 @@ export function JobForm({ scheduleId, onSuccess }: JobFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">선택 안함</SelectItem>
+                  <SelectItem value="__none__">선택 안함</SelectItem>
                   {activeUsers.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.displayName ?? user.email}

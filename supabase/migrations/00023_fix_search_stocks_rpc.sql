@@ -1,14 +1,6 @@
 -- ============================================================================
--- CHISAN Platform - Search Stocks RPC Function
--- INV-F001: Server-side search with proper pagination for stock inventory
--- ============================================================================
--- This function handles the 'q' search parameter server-side, searching
--- across item_code and display_name fields in the items table.
--- Fixes the client-side filtering issue that breaks pagination accuracy.
--- ============================================================================
-
--- ============================================================================
--- Function: Search Stocks with Server-Side Text Search
+-- CHISAN Platform - Fix Search Stocks RPC Function
+-- Fixes column name mismatches with items table schema
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.search_stocks(
@@ -113,20 +105,18 @@ BEGIN
           'code', pt.code,
           'nameKo', pt.name_ko,
           'nameEn', pt.name_en,
-          'category', pt.category,
+          'description', pt.description,
+          'sortOrder', pt.sort_order,
           'isActive', pt.is_active,
-          'notes', pt.notes,
-          'createdAt', pt.created_at,
-          'updatedAt', pt.updated_at
+          'createdAt', pt.created_at
         ),
         'brand', CASE WHEN b.id IS NOT NULL THEN jsonb_build_object(
           'id', b.id,
           'partnerId', b.partner_id,
           'code', b.code,
           'name', b.name,
-          'nameEn', b.name_en,
+          'description', b.description,
           'isActive', b.is_active,
-          'notes', b.notes,
           'createdAt', b.created_at,
           'updatedAt', b.updated_at
         ) ELSE NULL END
@@ -215,9 +205,3 @@ REVOKE ALL ON FUNCTION public.search_stocks(
 GRANT EXECUTE ON FUNCTION public.search_stocks(
   UUID, UUID, UUID, INTEGER, INTEGER, INTEGER, TEXT, TEXT, BOOLEAN, TEXT, INTEGER, INTEGER
 ) TO service_role;
-
--- ============================================================================
--- Comments
--- ============================================================================
-
-COMMENT ON FUNCTION public.search_stocks IS 'Server-side stock search with ILIKE text matching on item_code and display_name, proper pagination support';

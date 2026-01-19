@@ -136,7 +136,9 @@ export function CompleteJobForm({
               <div>
                 <p className="text-muted-foreground text-xs">품목</p>
                 <p className="font-medium">
-                  {parentItem.paperType.nameKo ?? parentItem.paperType.nameEn}{" "}
+                  {parentItem.paperType?.nameKo ??
+                    parentItem.paperType?.nameEn ??
+                    parentItem.displayName}{" "}
                   {parentItem.grammage}g
                 </p>
               </div>
@@ -195,8 +197,9 @@ export function CompleteJobForm({
                                 <SelectContent>
                                   {activeItems.map((item) => (
                                     <SelectItem key={item.id} value={item.id}>
-                                      {item.paperType.nameKo ??
-                                        item.paperType.nameEn}{" "}
+                                      {item.paperType?.nameKo ??
+                                        item.paperType?.nameEn ??
+                                        item.displayName}{" "}
                                       {item.grammage}g
                                     </SelectItem>
                                   ))}
