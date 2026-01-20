@@ -4,7 +4,6 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Ship,
   DollarSign,
   Clock,
   Package,
@@ -24,7 +23,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table";
-import { ShipmentStatusBadge } from "@/components/import";
+import {
+  ShipmentStatusBadge,
+  ReceiveShipmentDialog,
+} from "@/components/import";
 import { importCostColumns } from "@/components/import/import-cost-columns";
 import {
   currencySymbols,
@@ -51,13 +53,19 @@ export default function ShipmentDetailPage() {
   const params = useParams<{ id: string }>();
   const shipmentId = params.id;
 
-  const { data: shipment, isLoading, error } = useShipment(shipmentId);
-  const { data: history } = useShipmentHistory(shipmentId);
+  const { data: shipment, isLoading, error, refetch } = useShipment(shipmentId);
+  const { data: history, refetch: refetchHistory } =
+    useShipmentHistory(shipmentId);
   const { data: costsResponse } = useImportCosts({
     shipmentId: shipmentId,
     limit: 100,
     offset: 0,
   });
+
+  const handleReceiveSuccess = () => {
+    refetch();
+    refetchHistory();
+  };
 
   if (error) {
     return (
@@ -120,7 +128,15 @@ export default function ShipmentDetailPage() {
         <PageHeader
           title={`선적 ${shipment.shipmentNumber}`}
           description={`${shipment.partner.name} | PO: ${shipment.importOrder.poNumber}`}
-          action={<ShipmentStatusBadge status={shipment.status} />}
+          action={
+            <div className="flex items-center gap-3">
+              <ShipmentStatusBadge status={shipment.status} />
+              <ReceiveShipmentDialog
+                shipment={shipment}
+                onSuccess={handleReceiveSuccess}
+              />
+            </div>
+          }
         />
       </div>
 

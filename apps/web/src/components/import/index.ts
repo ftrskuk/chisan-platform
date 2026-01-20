@@ -4,3 +4,4 @@ export * from "./import-order-columns";
 export * from "./shipment-columns";
 export * from "./import-cost-columns";
 export * from "./import-order-form";
+export * from "./receive-shipment-dialog";

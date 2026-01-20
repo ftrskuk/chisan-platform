@@ -25,9 +25,11 @@ import type {
   ImportCostSearchInput,
   CreateImportCostInput,
   UpdateImportCostInput,
+  BulkStockInResult,
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
+import { StocksService } from "../stocks/stocks.service";
 import { mapUser, type DbUser } from "../../common/mappers";
 import { handleSupabaseError } from "../../common/utils";
 import {
@@ -52,6 +54,7 @@ export class ImportService {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly auditService: AuditService,
+    private readonly stocksService: StocksService,
   ) {}
 
   private readonly orderSelectQuery = `
@@ -793,6 +796,7 @@ export class ImportService {
         port_of_discharge: input.portOfDischarge ?? null,
         etd: input.etd ?? null,
         eta: input.eta ?? null,
+        destination_location_id: input.destinationLocationId ?? null,
         status: SHIPMENT_STATUS.PENDING,
         memo: input.memo ?? null,
       })
@@ -909,6 +913,7 @@ export class ImportService {
       { key: "actualArrivalDate", dbKey: "actual_arrival_date" },
       { key: "customsClearedDate", dbKey: "customs_cleared_date" },
       { key: "deliveredDate", dbKey: "delivered_date" },
+      { key: "destinationLocationId", dbKey: "destination_location_id" },
       { key: "memo", dbKey: "memo" },
     ] as const;
 
@@ -1076,13 +1081,26 @@ export class ImportService {
     id: string,
     input: ReceiveShipmentInput,
     userId: string,
-  ): Promise<ShipmentResult> {
+  ): Promise<ShipmentResult & { stockInResult?: BulkStockInResult }> {
     const client = this.supabaseService.getServiceClient();
     const existingShipment = await this.findOneShipment(id);
 
     if (existingShipment.status !== SHIPMENT_STATUS.CUSTOMS_CLEARED) {
       throw new BadRequestException(
         `Cannot receive shipment in status: ${existingShipment.status}`,
+      );
+    }
+
+    const { data: locationData, error: locationError } = await client
+      .from("locations")
+      .select("id")
+      .eq("id", input.locationId)
+      .eq("is_active", true)
+      .single();
+
+    if (locationError || !locationData) {
+      throw new BadRequestException(
+        `Invalid or inactive location: ${input.locationId}`,
       );
     }
 
@@ -1104,10 +1122,69 @@ export class ImportService {
       .update({
         status: SHIPMENT_STATUS.DELIVERED,
         delivered_date: new Date().toISOString().slice(0, 10),
+        destination_location_id: input.locationId,
       })
       .eq("id", id);
 
     if (updateError) throw new BadRequestException(updateError.message);
+
+    const stockInItems: Array<{
+      itemId: string;
+      locationId: string;
+      widthMm: number;
+      weightKg: number;
+      quantity: number;
+      condition: "parent" | "slitted";
+      sourceType: "import" | "production" | "adjustment";
+      lotNumber?: string;
+      notes?: string;
+    }> = [];
+
+    for (const receivedItem of input.items) {
+      if (receivedItem.receivedQuantity <= 0) continue;
+
+      const shipmentItem = existingShipment.items.find(
+        (si) => si.id === receivedItem.shipmentItemId,
+      );
+      if (!shipmentItem) continue;
+
+      const orderItem = shipmentItem.importOrderItem;
+      const unitWeight =
+        orderItem.weightKg && orderItem.quantity > 0
+          ? orderItem.weightKg / orderItem.quantity
+          : 0;
+
+      stockInItems.push({
+        itemId: orderItem.itemId,
+        locationId: input.locationId,
+        widthMm: orderItem.widthMm,
+        weightKg: unitWeight * receivedItem.receivedQuantity || 1,
+        quantity: receivedItem.receivedQuantity,
+        condition: "parent",
+        sourceType: "import",
+        lotNumber: existingShipment.shipmentNumber,
+        notes: `Shipment: ${existingShipment.shipmentNumber}, PO: ${existingShipment.importOrder.poNumber}`,
+      });
+    }
+
+    let stockInResult: BulkStockInResult | undefined;
+    if (stockInItems.length > 0) {
+      stockInResult = await this.stocksService.bulkStockIn(
+        { items: stockInItems },
+        userId,
+      );
+
+      for (let i = 0; i < stockInResult.results.length; i++) {
+        const result = stockInResult.results[i];
+        const inputItem = input.items[i];
+        if (result && inputItem) {
+          await client
+            .from("stocks")
+            .update({ shipment_item_id: inputItem.shipmentItemId })
+            .eq("id", result.stock.id);
+        }
+      }
+    }
 
     const updatedOrder = await this.findOneOrder(
       existingShipment.importOrderId,
@@ -1132,7 +1209,10 @@ export class ImportService {
         actor_id: userId,
         previous_status: SHIPMENT_STATUS.CUSTOMS_CLEARED,
         new_status: SHIPMENT_STATUS.DELIVERED,
-        changes: { receivedItems: input.items },
+        changes: {
+          receivedItems: input.items,
+          stocksCreated: stockInResult?.results.map((r) => r.stock.id) ?? [],
+        },
         memo: input.memo ?? null,
       })
       .select()
@@ -1147,12 +1227,16 @@ export class ImportService {
       category: "import",
       targetTable: "shipments",
       targetId: id,
-      metadata: { itemCount: input.items.length },
+      metadata: {
+        itemCount: input.items.length,
+        stocksCreated: stockInResult?.successCount ?? 0,
+      },
     });
 
     return {
       shipment,
       history: mapImportHistory(historyData as DbImportHistory),
+      stockInResult,
     };
   }
 

@@ -152,6 +152,7 @@ export function mapShipment(db: DbShipment): Shipment {
     actualArrivalDate: db.actual_arrival_date,
     customsClearedDate: db.customs_cleared_date,
     deliveredDate: db.delivered_date,
+    destinationLocationId: db.destination_location_id,
     status: db.status as ShipmentStatus,
     documents: parseDocuments(db.documents),
     memo: db.memo,
