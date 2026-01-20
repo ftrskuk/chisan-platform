@@ -11,7 +11,7 @@ import type {
   ImportOrderWithRelations,
 } from "@repo/shared";
 
-type FormValues = CreateShipmentInput;
+type FormValues = z.input<typeof createShipmentSchema>;
 import { useCreateShipment } from "@/hooks/api/use-import";
 import { Button } from "@/components/ui/button";
 import {
