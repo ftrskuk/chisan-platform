@@ -93,6 +93,7 @@ export const createShipmentSchema = z.object({
   portOfDischarge: z.string().optional(),
   etd: z.string().optional(),
   eta: z.string().optional(),
+  destinationLocationId: z.string().uuid().optional(),
   memo: z.string().optional(),
   items: z.array(createShipmentItemSchema).min(1),
 });
@@ -112,6 +113,7 @@ export const updateShipmentSchema = z.object({
   actualArrivalDate: z.string().optional(),
   customsClearedDate: z.string().optional(),
   deliveredDate: z.string().optional(),
+  destinationLocationId: z.string().uuid().optional(),
   memo: z.string().optional(),
 });
 export type UpdateShipmentInput = z.infer<typeof updateShipmentSchema>;
@@ -139,6 +141,7 @@ export type ReceiveShipmentItemInput = z.infer<
 >;
 
 export const receiveShipmentSchema = z.object({
+  locationId: z.string().uuid(),
   items: z.array(receiveShipmentItemSchema).min(1),
   memo: z.string().optional(),
 });

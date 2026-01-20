@@ -128,6 +128,7 @@ export interface Shipment {
   actualArrivalDate: string | null;
   customsClearedDate: string | null;
   deliveredDate: string | null;
+  destinationLocationId: string | null;
   status: ShipmentStatus;
   documents: ShipmentDocument[];
   memo: string | null;

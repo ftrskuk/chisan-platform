@@ -114,6 +114,7 @@ export interface DbShipment {
   actual_arrival_date: string | null;
   customs_cleared_date: string | null;
   delivered_date: string | null;
+  destination_location_id: string | null;
   status: string;
   documents: unknown;
   memo: string | null;
