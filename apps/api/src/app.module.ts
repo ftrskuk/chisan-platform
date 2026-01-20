@@ -12,6 +12,7 @@ import { ItemsModule } from "./modules/items/items.module";
 import { StocksModule } from "./modules/stocks/stocks.module";
 import { OrdersModule } from "./modules/orders/orders.module";
 import { SlittingModule } from "./modules/slitting/slitting.module";
+import { ImportModule } from "./modules/import/import.module";
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { SlittingModule } from "./modules/slitting/slitting.module";
     StocksModule,
     OrdersModule,
     SlittingModule,
+    ImportModule,
   ],
   controllers: [AppController],
 })

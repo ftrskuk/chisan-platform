@@ -3,57 +3,52 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import type {
-  SlittingSchedule,
-  SlittingScheduleWithStats,
-  SlittingScheduleWithRelations,
-  SlittingJob,
-  SlittingJobWithRelations,
-  SlittingActualOutput,
-  SlittingActualOutputWithRelations,
-  SlittingPlannedOutput,
-  SlittingPlannedOutputWithRelations,
-  SlittingJobRoll,
-  SlittingJobRollWithRelations,
-  SlittingHistory,
-  SlittingHistoryWithActor,
-  SlittingSchedulesResponse,
-  SlittingJobsResponse,
-  SlittingScheduleResult,
-  SlittingJobResult,
-  ApproveJobResult,
-  ApproveJobV2Result,
-  ScheduleStatus,
-  JobStatus,
-  JobRollStatus,
-  SlittingEntityType,
-  SlittingHistoryAction,
-  ScheduleSearchInput,
-  JobSearchInput,
-  CreateScheduleInput,
-  UpdateScheduleInput,
-  CreateJobInput,
-  CreateJobV2Input,
-  UpdateJobInput,
-  CompleteJobInput,
-  WorkerJobSearchInput,
-  RegisterRollInput,
-  StartRollInput,
-  RecordActualOutputInput,
-  UpdateActualOutputInput,
-  CompleteRollInput,
-  CancelRollInput,
-  CompleteJobV2Input,
-  Machine,
-  MachineStatus,
+import {
+  type SlittingSchedule,
+  type SlittingScheduleWithStats,
+  type SlittingScheduleWithRelations,
+  type SlittingJob,
+  type SlittingJobWithRelations,
+  type SlittingActualOutput,
+  type SlittingActualOutputWithRelations,
+  type SlittingPlannedOutput,
+  type SlittingPlannedOutputWithRelations,
+  type SlittingJobRoll,
+  type SlittingJobRollWithRelations,
+  type SlittingHistory,
+  type SlittingHistoryWithActor,
+  type SlittingSchedulesResponse,
+  type SlittingJobsResponse,
+  type SlittingScheduleResult,
+  type SlittingJobResult,
+  type ApproveJobResult,
+  type ApproveJobV2Result,
+  type ScheduleStatus,
+  type JobStatus,
+  type JobRollStatus,
+  type SlittingEntityType,
+  type SlittingHistoryAction,
+  type ScheduleSearchInput,
+  type JobSearchInput,
+  type CreateScheduleInput,
+  type UpdateScheduleInput,
+  type CreateJobInput,
+  type CreateJobV2Input,
+  type CompleteJobInput,
+  type WorkerJobSearchInput,
+  type RegisterRollInput,
+  type StartRollInput,
+  type RecordActualOutputInput,
+  type UpdateActualOutputInput,
+  type CompleteRollInput,
+  type CancelRollInput,
+  type CompleteJobV2Input,
+  type Machine,
+  type MachineStatus,
 } from "@repo/shared";
 import { SupabaseService } from "../../core/supabase/supabase.service";
 import { AuditService } from "../../core/audit/audit.service";
 import {
-  type DbItem,
-  type DbPaperType,
-  type DbBrand,
-  type DbStock,
   type DbUser,
   mapItem,
   mapPaperType,
@@ -62,240 +57,42 @@ import {
   mapUser,
 } from "../../common/mappers";
 import { handleSupabaseError } from "../../common/utils";
-
-const SCHEDULE_STATUS = {
-  DRAFT: "draft",
-  PUBLISHED: "published",
-  IN_PROGRESS: "in_progress",
-  COMPLETED: "completed",
-} as const;
-
-const JOB_STATUS = {
-  PENDING: "pending",
-  READY: "ready",
-  IN_PROGRESS: "in_progress",
-  COMPLETED: "completed",
-  APPROVED: "approved",
-} as const;
-
-const MACHINE_STATUS = {
-  IDLE: "idle",
-  RUNNING: "running",
-  MAINTENANCE: "maintenance",
-} as const;
-
-const ENTITY_TYPE = {
-  SCHEDULE: "schedule",
-  JOB: "job",
-} as const;
-
-const HISTORY_ACTION = {
-  CREATED: "created",
-  UPDATED: "updated",
-  PUBLISHED: "published",
-  READY: "ready",
-  STARTED: "started",
-  COMPLETED: "completed",
-  APPROVED: "approved",
-  CANCELLED: "cancelled",
-} as const;
-
-const STOCK_STATUS = {
-  AVAILABLE: "available",
-  RESERVED: "reserved",
-  QUARANTINE: "quarantine",
-  DISPOSED: "disposed",
-} as const;
-
-const STOCK_CONDITION = {
-  PARENT: "parent",
-  SLITTED: "slitted",
-} as const;
-
-interface DbSchedule {
-  id: string;
-  schedule_number: string;
-  scheduled_date: string;
-  status: string;
-  created_by: string;
-  memo: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface DbScheduleWithStats extends DbSchedule {
-  created_by_name: string | null;
-  total_jobs: number;
-  pending_jobs: number;
-  ready_jobs: number;
-  in_progress_jobs: number;
-  completed_jobs: number;
-  approved_jobs: number;
-  total_planned_rolls: number;
-  total_registered_rolls: number;
-  total_completed_rolls: number;
-}
-
-interface DbJob {
-  id: string;
-  schedule_id: string;
-  machine_id: string;
-  parent_stock_id: string | null;
-  item_id: string | null;
-  parent_width_mm: number | null;
-  planned_roll_count: number;
-  operator_id: string | null;
-  sequence_number: number;
-  status: string;
-  started_at: string | null;
-  completed_at: string | null;
-  approved_at: string | null;
-  approved_by: string | null;
-  memo: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface DbOutput {
-  id: string;
-  job_id: string;
-  item_id: string;
-  width_mm: number;
-  quantity: number;
-  weight_kg: number | null;
-  qr_code: string | null;
-  is_loss: boolean;
-  notes: string | null;
-  created_at: string;
-}
-
-interface DbActualOutput extends DbOutput {
-  job_roll_id: string | null;
-  planned_output_id: string | null;
-  length_m: number | null;
-  roll_id: string | null;
-  recorded_by: string | null;
-  recorded_at: string | null;
-}
-
-interface DbPlannedOutput {
-  id: string;
-  job_id: string;
-  item_id: string;
-  width_mm: number;
-  quantity: number;
-  sequence_number: number;
-  notes: string | null;
-  created_at: string;
-}
-
-interface DbJobRoll {
-  id: string;
-  job_id: string;
-  stock_id: string;
-  sequence_number: number;
-  status: string;
-  registered_at: string;
-  registered_by: string;
-  started_at: string | null;
-  completed_at: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-const JOB_ROLL_STATUS = {
-  REGISTERED: "registered",
-  IN_PROGRESS: "in_progress",
-  COMPLETED: "completed",
-  CANCELLED: "cancelled",
-} as const;
-
-interface DbHistory {
-  id: string;
-  entity_type: string;
-  entity_id: string;
-  action: string;
-  actor_id: string;
-  previous_status: string | null;
-  new_status: string | null;
-  changes: Record<string, unknown> | null;
-  memo: string | null;
-  created_at: string;
-}
-
-interface DbMachine {
-  id: string;
-  name: string;
-  status: string;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface DbJobWithRelations extends DbJob {
-  slitting_schedules: DbSchedule;
-  machines: DbMachine;
-  operator: DbUser | null;
-  approved_user: DbUser | null;
-  // V1 parent stock - nullable in V2
-  stocks:
-    | (DbStock & {
-        items: DbItem & {
-          paper_types: DbPaperType;
-          brands: DbBrand | null;
-        };
-      })
-    | null;
-  // V2 item relation
-  items:
-    | (DbItem & {
-        paper_types: DbPaperType;
-        brands: DbBrand | null;
-      })
-    | null;
-  // Legacy outputs - renamed to slitting_actual_outputs
-  slitting_actual_outputs: Array<
-    DbActualOutput & {
-      items: DbItem & {
-        paper_types: DbPaperType;
-        brands: DbBrand | null;
-      };
-      registered_by_user?: DbUser | null;
-      slitting_planned_outputs?: DbPlannedOutput | null;
-      slitting_job_rolls?: DbJobRoll | null;
-    }
-  >;
-  // V2 planned outputs
-  slitting_planned_outputs?: Array<
-    DbPlannedOutput & {
-      items: DbItem & {
-        paper_types: DbPaperType;
-        brands: DbBrand | null;
-      };
-    }
-  >;
-  // V2 job rolls
-  slitting_job_rolls?: Array<
-    DbJobRoll & {
-      stocks: DbStock & {
-        items: DbItem & {
-          paper_types: DbPaperType;
-          brands: DbBrand | null;
-        };
-      };
-      registered_by_user: DbUser;
-      slitting_actual_outputs?: Array<
-        DbActualOutput & {
-          items: DbItem & {
-            paper_types: DbPaperType;
-            brands: DbBrand | null;
-          };
-        }
-      >;
-    }
-  >;
-}
+import {
+  SCHEDULE_STATUS,
+  JOB_STATUS,
+  MACHINE_STATUS,
+  ENTITY_TYPE,
+  HISTORY_ACTION,
+  STOCK_STATUS,
+  STOCK_CONDITION,
+  JOB_ROLL_STATUS,
+  type DbSchedule,
+  type DbScheduleWithStats,
+  type DbJob,
+  type DbJobWithRelations,
+  type DbHistory,
+  type DbActualOutput,
+  type DbPlannedOutput,
+  type DbJobRoll,
+  type DbMachine,
+} from "./slitting.types";
+import type {
+  DbItem,
+  DbPaperType,
+  DbBrand,
+  DbStock,
+} from "../../common/mappers";
+import {
+  mapSchedule,
+  mapScheduleWithStats,
+  mapJob,
+  mapJobWithRelations,
+  mapActualOutput,
+  mapPlannedOutput,
+  mapJobRoll,
+  mapHistory,
+  mapMachine,
+} from "./slitting.mapper";
 
 @Injectable()
 export class SlittingService {
@@ -303,228 +100,6 @@ export class SlittingService {
     private readonly supabaseService: SupabaseService,
     private readonly auditService: AuditService,
   ) {}
-
-  private mapSchedule(db: DbSchedule): SlittingSchedule {
-    return {
-      id: db.id,
-      scheduleNumber: db.schedule_number,
-      scheduledDate: db.scheduled_date,
-      status: db.status as ScheduleStatus,
-      createdBy: db.created_by,
-      memo: db.memo,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
-  private mapScheduleWithStats(
-    db: DbScheduleWithStats,
-  ): SlittingScheduleWithStats {
-    return {
-      ...this.mapSchedule(db),
-      createdByName: db.created_by_name,
-      totalJobs: db.total_jobs,
-      pendingJobs: db.pending_jobs,
-      readyJobs: db.ready_jobs,
-      inProgressJobs: db.in_progress_jobs,
-      completedJobs: db.completed_jobs,
-      approvedJobs: db.approved_jobs,
-      totalPlannedRolls: db.total_planned_rolls,
-      totalRegisteredRolls: db.total_registered_rolls,
-      totalCompletedRolls: db.total_completed_rolls,
-    };
-  }
-
-  private mapJob(db: DbJob): SlittingJob {
-    return {
-      id: db.id,
-      scheduleId: db.schedule_id,
-      machineId: db.machine_id,
-      parentStockId: db.parent_stock_id,
-      itemId: db.item_id,
-      parentWidthMm: db.parent_width_mm,
-      plannedRollCount: db.planned_roll_count,
-      operatorId: db.operator_id,
-      sequenceNumber: db.sequence_number,
-      status: db.status as JobStatus,
-      startedAt: db.started_at,
-      completedAt: db.completed_at,
-      approvedAt: db.approved_at,
-      approvedBy: db.approved_by,
-      memo: db.memo,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
-  private mapActualOutput(db: DbActualOutput): SlittingActualOutput {
-    return {
-      id: db.id,
-      jobId: db.job_id,
-      itemId: db.item_id,
-      widthMm: db.width_mm,
-      quantity: db.quantity,
-      weightKg: db.weight_kg ? Number(db.weight_kg) : null,
-      qrCode: db.qr_code,
-      isLoss: db.is_loss,
-      notes: db.notes,
-      createdAt: db.created_at,
-      jobRollId: db.job_roll_id,
-      plannedOutputId: db.planned_output_id,
-      lengthM: db.length_m ? Number(db.length_m) : null,
-      rollId: db.roll_id,
-      recordedBy: db.recorded_by,
-      recordedAt: db.recorded_at,
-    };
-  }
-
-  private mapPlannedOutput(db: DbPlannedOutput): SlittingPlannedOutput {
-    return {
-      id: db.id,
-      jobId: db.job_id,
-      itemId: db.item_id,
-      widthMm: db.width_mm,
-      quantity: db.quantity,
-      sequenceNumber: db.sequence_number,
-      notes: db.notes,
-      createdAt: db.created_at,
-    };
-  }
-
-  private mapJobRoll(db: DbJobRoll): SlittingJobRoll {
-    return {
-      id: db.id,
-      jobId: db.job_id,
-      stockId: db.stock_id,
-      sequenceNumber: db.sequence_number,
-      status: db.status as JobRollStatus,
-      registeredAt: db.registered_at,
-      registeredBy: db.registered_by,
-      startedAt: db.started_at,
-      completedAt: db.completed_at,
-      notes: db.notes,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
-  private mapHistory(db: DbHistory): SlittingHistory {
-    return {
-      id: db.id,
-      entityType: db.entity_type as SlittingEntityType,
-      entityId: db.entity_id,
-      action: db.action as SlittingHistoryAction,
-      actorId: db.actor_id,
-      previousStatus: db.previous_status,
-      newStatus: db.new_status,
-      changes: db.changes,
-      memo: db.memo,
-      createdAt: db.created_at,
-    };
-  }
-
-  private mapMachine(db: DbMachine): Machine {
-    return {
-      id: db.id,
-      name: db.name,
-      status: db.status as MachineStatus,
-      description: db.description,
-      createdAt: db.created_at,
-      updatedAt: db.updated_at,
-    };
-  }
-
-  private mapJobWithRelations(
-    db: DbJobWithRelations,
-  ): SlittingJobWithRelations {
-    const job = this.mapJob(db);
-    const schedule = this.mapSchedule(db.slitting_schedules);
-    const machine = this.mapMachine(db.machines);
-    const operator = mapUser(db.operator);
-    const approvedByUser = mapUser(db.approved_user);
-
-    const parentStock = db.stocks
-      ? {
-          ...mapStock(db.stocks),
-          item: {
-            ...mapItem(db.stocks.items),
-            paperType: mapPaperType(db.stocks.items.paper_types),
-            brand: db.stocks.items.brands
-              ? mapBrand(db.stocks.items.brands)
-              : null,
-          },
-        }
-      : null;
-
-    const item = db.items
-      ? {
-          ...mapItem(db.items),
-          paperType: mapPaperType(db.items.paper_types),
-          brand: db.items.brands ? mapBrand(db.items.brands) : null,
-        }
-      : null;
-
-    const outputs: SlittingActualOutputWithRelations[] = (
-      db.slitting_actual_outputs || []
-    ).map((o) => ({
-      ...this.mapActualOutput(o),
-      item: {
-        ...mapItem(o.items),
-        paperType: mapPaperType(o.items.paper_types),
-        brand: o.items.brands ? mapBrand(o.items.brands) : null,
-      },
-    }));
-
-    const plannedOutputs: SlittingPlannedOutputWithRelations[] = (
-      db.slitting_planned_outputs || []
-    ).map((po) => ({
-      ...this.mapPlannedOutput(po),
-      item: {
-        ...mapItem(po.items),
-        paperType: mapPaperType(po.items.paper_types),
-        brand: po.items.brands ? mapBrand(po.items.brands) : null,
-      },
-    }));
-
-    const jobRolls: SlittingJobRollWithRelations[] = (
-      db.slitting_job_rolls || []
-    ).map((jr) => ({
-      ...this.mapJobRoll(jr),
-      stock: {
-        ...mapStock(jr.stocks),
-        item: {
-          ...mapItem(jr.stocks.items),
-          paperType: mapPaperType(jr.stocks.items.paper_types),
-          brand: jr.stocks.items.brands
-            ? mapBrand(jr.stocks.items.brands)
-            : null,
-        },
-      },
-      registeredByUser: mapUser(jr.registered_by_user)!,
-      actualOutputs: (jr.slitting_actual_outputs || []).map((ao) => ({
-        ...this.mapActualOutput(ao),
-        item: {
-          ...mapItem(ao.items),
-          paperType: mapPaperType(ao.items.paper_types),
-          brand: ao.items.brands ? mapBrand(ao.items.brands) : null,
-        },
-      })),
-    }));
-
-    return {
-      ...job,
-      schedule,
-      machine,
-      parentStock,
-      item,
-      operator,
-      approvedByUser,
-      outputs,
-      plannedOutputs,
-      jobRolls,
-      actualOutputs: outputs,
-    };
-  }
 
   async findAllSchedules(
     search: ScheduleSearchInput,
@@ -568,7 +143,7 @@ export class SlittingService {
 
     return {
       data: (data as DbScheduleWithStats[]).map((db) =>
-        this.mapScheduleWithStats(db),
+        mapScheduleWithStats(db),
       ),
       total: count ?? 0,
       limit: search.limit,
@@ -659,12 +234,12 @@ export class SlittingService {
 
     if (jobsError) throw new BadRequestException(jobsError.message);
 
-    const schedule = this.mapSchedule(scheduleData as DbSchedule);
+    const schedule = mapSchedule(scheduleData as DbSchedule);
     const createdByUser = mapUser(
       (scheduleData as { created_by_user: DbUser }).created_by_user,
     )!;
     const jobs = (jobsData as DbJobWithRelations[]).map((db) =>
-      this.mapJobWithRelations(db),
+      mapJobWithRelations(db),
     );
 
     const stats = {
@@ -742,7 +317,7 @@ export class SlittingService {
 
     return {
       schedule,
-      history: this.mapHistory(historyData as DbHistory),
+      history: mapHistory(historyData as DbHistory),
     };
   }
 
@@ -831,7 +406,7 @@ export class SlittingService {
 
     return {
       schedule,
-      history: this.mapHistory(historyData as DbHistory),
+      history: mapHistory(historyData as DbHistory),
     };
   }
 
@@ -888,7 +463,7 @@ export class SlittingService {
 
     return {
       schedule,
-      history: this.mapHistory(historyData as DbHistory),
+      history: mapHistory(historyData as DbHistory),
     };
   }
 
@@ -983,9 +558,7 @@ export class SlittingService {
     }
 
     return {
-      data: (data as DbJobWithRelations[]).map((db) =>
-        this.mapJobWithRelations(db),
-      ),
+      data: (data as DbJobWithRelations[]).map((db) => mapJobWithRelations(db)),
       total: count ?? 0,
       limit: search.limit,
       offset: search.offset,
@@ -1062,7 +635,7 @@ export class SlittingService {
       throw new NotFoundException(`Job with ID ${id} not found`);
     }
 
-    return this.mapJobWithRelations(data as DbJobWithRelations);
+    return mapJobWithRelations(data as DbJobWithRelations);
   }
 
   async createJob(
@@ -1173,7 +746,7 @@ export class SlittingService {
 
     return {
       job,
-      history: this.mapHistory(historyData as DbHistory),
+      history: mapHistory(historyData as DbHistory),
     };
   }
 
@@ -1328,7 +901,7 @@ export class SlittingService {
 
     return {
       job,
-      history: this.mapHistory(historyData as DbHistory),
+      history: mapHistory(historyData as DbHistory),
     };
   }
 
@@ -1390,7 +963,7 @@ export class SlittingService {
 
     return {
       job,
-      history: this.mapHistory(historyData as DbHistory),
+      history: mapHistory(historyData as DbHistory),
     };
   }
 
@@ -1468,7 +1041,7 @@ export class SlittingService {
 
     return {
       job,
-      history: this.mapHistory(historyData as DbHistory),
+      history: mapHistory(historyData as DbHistory),
     };
   }
 
@@ -1563,7 +1136,7 @@ export class SlittingService {
 
     return {
       job,
-      history: this.mapHistory(historyData as DbHistory),
+      history: mapHistory(historyData as DbHistory),
     };
   }
 
@@ -1656,7 +1229,7 @@ export class SlittingService {
     const client = this.supabaseService.getServiceClient();
 
     const scheduledDate =
-      search.scheduledDate ?? new Date().toISOString().split("T")[0];
+      search.scheduledDate || new Date().toISOString().slice(0, 10);
 
     let query = client.from("slitting_jobs").select(
       `
@@ -1718,16 +1291,35 @@ export class SlittingService {
       { count: "exact" },
     );
 
-    query = query.eq("slitting_schedules.scheduled_date", scheduledDate);
+    if (search.statuses && search.statuses.length > 0) {
+      const inProgressIncluded = search.statuses.includes("in_progress");
+      const otherStatuses = search.statuses.filter(
+        (s): s is JobStatus => s !== "in_progress",
+      );
+
+      if (inProgressIncluded && otherStatuses.length > 0) {
+        return this.findWorkerJobsMixed(search, scheduledDate, otherStatuses);
+      } else if (inProgressIncluded) {
+        query = query.eq("status", "in_progress");
+      } else {
+        query = query
+          .in("status", otherStatuses)
+          .lte("slitting_schedules.scheduled_date", scheduledDate);
+      }
+    } else if (search.status) {
+      if (search.status === "in_progress") {
+        query = query.eq("status", search.status);
+      } else {
+        query = query
+          .eq("status", search.status)
+          .lte("slitting_schedules.scheduled_date", scheduledDate);
+      }
+    } else {
+      query = query.lte("slitting_schedules.scheduled_date", scheduledDate);
+    }
 
     if (search.machineId) {
       query = query.eq("machine_id", search.machineId);
-    }
-    if (search.status) {
-      query = query.eq("status", search.status);
-    }
-    if (search.statuses && search.statuses.length > 0) {
-      query = query.in("status", search.statuses);
     }
 
     const { data, error, count } = await query
@@ -1742,10 +1334,131 @@ export class SlittingService {
     }
 
     return {
-      data: (data as DbJobWithRelations[]).map((db) =>
-        this.mapJobWithRelations(db),
-      ),
+      data: (data as DbJobWithRelations[]).map((db) => mapJobWithRelations(db)),
       total: count ?? 0,
+      limit: search.limit,
+      offset: search.offset,
+    };
+  }
+
+  private async findWorkerJobsMixed(
+    search: WorkerJobSearchInput,
+    scheduledDate: string,
+    otherStatuses: JobStatus[],
+  ): Promise<SlittingJobsResponse> {
+    const client = this.supabaseService.getServiceClient();
+
+    const selectQuery = `
+      *,
+      slitting_schedules!inner (*),
+      machines (*),
+      operator:users!slitting_jobs_operator_id_fkey (id, display_name, email),
+      approved_user:users!slitting_jobs_approved_by_fkey (id, display_name, email),
+      stocks!slitting_jobs_parent_stock_id_fkey (
+        *,
+        items (
+          *,
+          paper_types (*),
+          brands (*)
+        )
+      ),
+      items!slitting_jobs_item_id_fkey (
+        *,
+        paper_types (*),
+        brands (*)
+      ),
+      slitting_actual_outputs (
+        *,
+        items (
+          *,
+          paper_types (*),
+          brands (*)
+        )
+      ),
+      slitting_planned_outputs (
+        *,
+        items (
+          *,
+          paper_types (*),
+          brands (*)
+        )
+      ),
+      slitting_job_rolls (
+        *,
+        stocks (
+          *,
+          items (
+            *,
+            paper_types (*),
+            brands (*)
+          )
+        ),
+        registered_by_user:users!slitting_job_rolls_registered_by_fkey (id, display_name, email),
+        slitting_actual_outputs (
+          *,
+          items (
+            *,
+            paper_types (*),
+            brands (*)
+          )
+        )
+      )
+    `;
+
+    let inProgressQuery = client
+      .from("slitting_jobs")
+      .select(selectQuery)
+      .eq("status", "in_progress");
+
+    if (search.machineId) {
+      inProgressQuery = inProgressQuery.eq("machine_id", search.machineId);
+    }
+
+    let otherQuery = client
+      .from("slitting_jobs")
+      .select(selectQuery)
+      .in("status", otherStatuses)
+      .lte("slitting_schedules.scheduled_date", scheduledDate);
+
+    if (search.machineId) {
+      otherQuery = otherQuery.eq("machine_id", search.machineId);
+    }
+
+    const [inProgressResult, otherResult] = await Promise.all([
+      inProgressQuery,
+      otherQuery,
+    ]);
+
+    if (inProgressResult.error) {
+      handleSupabaseError(inProgressResult.error, {
+        operation: "fetch worker jobs (in_progress)",
+        resource: "SlittingJob",
+      });
+    }
+
+    if (otherResult.error) {
+      handleSupabaseError(otherResult.error, {
+        operation: "fetch worker jobs (other statuses)",
+        resource: "SlittingJob",
+      });
+    }
+
+    const allJobs = [
+      ...(inProgressResult.data ?? []),
+      ...(otherResult.data ?? []),
+    ] as DbJobWithRelations[];
+
+    allJobs.sort((a, b) => (a.sequence_number ?? 0) - (b.sequence_number ?? 0));
+
+    const total = allJobs.length;
+    const paginated = allJobs.slice(
+      search.offset,
+      search.offset + search.limit,
+    );
+
+    return {
+      data: paginated.map((db) => mapJobWithRelations(db)),
+      total,
       limit: search.limit,
       offset: search.offset,
     };
@@ -1890,7 +1603,7 @@ export class SlittingService {
     };
 
     return {
-      ...this.mapJobRoll(dbRoll),
+      ...mapJobRoll(dbRoll),
       stock: {
         ...mapStock(dbRoll.stocks),
         item: {
@@ -2020,7 +1733,7 @@ export class SlittingService {
     };
 
     return {
-      ...this.mapJobRoll(dbRoll),
+      ...mapJobRoll(dbRoll),
       stock: {
         ...mapStock(dbRoll.stocks),
         item: {
@@ -2135,7 +1848,7 @@ export class SlittingService {
     };
 
     return {
-      ...this.mapActualOutput(dbOutput),
+      ...mapActualOutput(dbOutput),
       item: {
         ...mapItem(dbOutput.items),
         paperType: mapPaperType(dbOutput.items.paper_types),
@@ -2227,7 +1940,7 @@ export class SlittingService {
     };
 
     return {
-      ...this.mapActualOutput(dbOutput),
+      ...mapActualOutput(dbOutput),
       item: {
         ...mapItem(dbOutput.items),
         paperType: mapPaperType(dbOutput.items.paper_types),
@@ -2318,7 +2031,7 @@ export class SlittingService {
     };
 
     return {
-      ...this.mapJobRoll(dbRoll),
+      ...mapJobRoll(dbRoll),
       stock: {
         ...mapStock(dbRoll.stocks),
         item: {
@@ -2331,7 +2044,7 @@ export class SlittingService {
       },
       registeredByUser: mapUser(dbRoll.registered_by_user)!,
       actualOutputs: (dbRoll.slitting_actual_outputs || []).map((ao) => ({
-        ...this.mapActualOutput(ao),
+        ...mapActualOutput(ao),
         item: {
           ...mapItem(ao.items),
           paperType: mapPaperType(ao.items.paper_types),
@@ -2429,7 +2142,7 @@ export class SlittingService {
     };
 
     return {
-      ...this.mapJobRoll(dbRoll),
+      ...mapJobRoll(dbRoll),
       stock: {
         ...mapStock(dbRoll.stocks),
         item: {
@@ -2535,7 +2248,7 @@ export class SlittingService {
 
     return {
       job,
-      history: this.mapHistory(historyData as DbHistory),
+      history: mapHistory(historyData as DbHistory),
     };
   }
 
@@ -2565,7 +2278,7 @@ export class SlittingService {
     }
 
     return (data || []).map((h) => ({
-      ...this.mapHistory(h as DbHistory),
+      ...mapHistory(h as DbHistory),
       actor: mapUser((h as { actor: DbUser }).actor)!,
     }));
   }
